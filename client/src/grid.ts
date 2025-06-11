@@ -72,14 +72,9 @@ function gridMouseDown(day: number, timeIncrement: number, e: MouseEvent) {
     availableStart = available;
     dayStart = day;
     timeIncrementStart = timeIncrement;
-
-    console.log("down", notEditing, rightClickEdit);
-
 }
 
 function gridMouseOver(day: number, timeIncrement: number) {
-
-    console.log(notEditing, rightClickEdit)
 
     if(notEditing) {
         return;
@@ -90,7 +85,6 @@ function gridMouseOver(day: number, timeIncrement: number) {
         const directionChanged: boolean = editingDirectionPrevious !== null && editingDirection !== editingDirectionPrevious;
 
         if(directionChanged) {
-            console.log("change")
             availableStart = availableStart ^ 1;
             dayStart = dayPrevious;
             timeIncrementStart = timeIncrementPrevious;
@@ -148,7 +142,7 @@ function gridContextMenu(e: MouseEvent) {
 }
 
 
-function documentMouseUp(e: MouseEvent) {
+function documentMouseUp() {
     notEditing = !rightClickEdit;
     editingDirectionPrevious = null;
 }
