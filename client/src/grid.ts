@@ -1,9 +1,11 @@
-import { dayCount, timeIncrementCount } from "./main";
+export const timeIncrementCount: number = 32;
+export const dayCount: number = 7;
 
 const gridElements: HTMLLIElement[] = new Array(timeIncrementCount * dayCount);
 
 const weekAvailability: Uint32Array = new Uint32Array(dayCount);
 let notEditing: boolean = true;
+let rightClickEdit: boolean = false;
 
 let availableStart: number = 0; // boolean number, 0 or 1
 let dayStart: number = 0;
@@ -15,26 +17,51 @@ let timeIncrementPrevious: number = 0;
 
 export default function renderGrid() {
 
-    const grid: HTMLUListElement = document.querySelector("#grid")!;
+    const grid: HTMLUListElement = document.querySelector("#grid .content")!;
+    const labels: HTMLUListElement = document.querySelector("#grid .labels")!;
 
-    document.addEventListener("mouseup", gridMouseUp);
+    document.addEventListener("mouseup", documentMouseUp);
     grid.ondragstart = () => false;
 
+    let hour: number = 8;
+    let am: boolean = true;
+
     for(let timeIncrement = 0; timeIncrement < timeIncrementCount; timeIncrement++) {
+
+        if((timeIncrement & 1) == 0) {
+            const element: HTMLLIElement = document.createElement("li")!;
+            element.textContent = `${hour}:00${am ? "am" : "pm"}`;
+            labels.appendChild(element);
+            hour = (hour % 12) + 1;
+
+            if(hour === 12) {
+                am = !am;
+            }
+        }
+
         for(let day = 0; day < dayCount; day++) {
             const element: HTMLLIElement = document.createElement("li")!;
             const available: number = weekAvailability[day] & (1 << timeIncrement);
             element.style = available ? "background-color: green" : "background-color: lightgrey";
-            gridElements[timeIncrement * dayCount + day] = element;
-            grid.appendChild(element);
             element.addEventListener("mousedown", gridMouseDown.bind(null, day, timeIncrement));
             element.addEventListener("mouseover", gridMouseOver.bind(null, day, timeIncrement));
+            element.addEventListener("contextmenu", gridContextMenu);
+            gridElements[timeIncrement * dayCount + day] = element;
+            grid.appendChild(element);
         }
     }
+
+    const element: HTMLLIElement = document.createElement("li")!;
+    element.textContent = `${hour}:00${am ? "am" : "pm"}`;
+    labels.appendChild(element);
 
 }
 
 function gridMouseDown(day: number, timeIncrement: number, e: MouseEvent) {
+
+    if(rightClickEdit) {
+        return;
+    }
 
     weekAvailability[day] ^= (1 << timeIncrement);
                 
@@ -46,9 +73,13 @@ function gridMouseDown(day: number, timeIncrement: number, e: MouseEvent) {
     dayStart = day;
     timeIncrementStart = timeIncrement;
 
+    console.log("down", notEditing, rightClickEdit);
+
 }
 
-function gridMouseOver(day: number, timeIncrement: number, _: MouseEvent) {
+function gridMouseOver(day: number, timeIncrement: number) {
+
+    console.log(notEditing, rightClickEdit)
 
     if(notEditing) {
         return;
@@ -59,6 +90,7 @@ function gridMouseOver(day: number, timeIncrement: number, _: MouseEvent) {
         const directionChanged: boolean = editingDirectionPrevious !== null && editingDirection !== editingDirectionPrevious;
 
         if(directionChanged) {
+            console.log("change")
             availableStart = availableStart ^ 1;
             dayStart = dayPrevious;
             timeIncrementStart = timeIncrementPrevious;
@@ -109,6 +141,14 @@ function gridMouseOver(day: number, timeIncrement: number, _: MouseEvent) {
     dayPrevious = day;
 }
 
-function gridMouseUp() {
-    notEditing = true;
+function gridContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    notEditing = rightClickEdit;
+    rightClickEdit = !rightClickEdit;
+}
+
+
+function documentMouseUp(e: MouseEvent) {
+    notEditing = !rightClickEdit;
+    editingDirectionPrevious = null;
 }
