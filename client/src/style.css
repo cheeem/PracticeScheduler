@@ -16,11 +16,12 @@ html, body, #app, main {
 
 main {
     display: flex;
+    justify-content: space-between;
 
     padding: 2rem 5rem;
 }
 
-#grid {
+#grid .content {
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
@@ -29,25 +30,39 @@ main {
 #grid .labels {
     display: grid;
     gap: 0.8rem;
-    translate: 0 -0.6rem;
+    translate: 0 -0.7rem;
 }
 
 #grid .labels li {
     font-size: 0.9em;
 }
 
-#grid .content {
+#grid .body {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    /* gap: 0.1em; */
+    column-gap: 0.2em;
 
-    width: 35rem;
-
-    border: 1px solid black;
+    /* border: 1px solid black; */
 }
 
-#grid .content li {
+#grid .body li {
+    display: grid;
+
     height: 1rem;
 
     border: 1px solid black;
+    border-bottom-width: 0;
+}
+
+#grid .body li:nth-of-type(n + 218) {
+    border-bottom-width: 1px;
+}
+
+#grid .body li div {
+    width: 1rem;
+}
+
+#body .legend ul {
+    display: flex;
+    justify-content: space-between;
 }

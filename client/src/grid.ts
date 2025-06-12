@@ -1,9 +1,11 @@
-export const timeIncrementCount: number = 32;
-export const dayCount: number = 7;
+import { dayCount, timeIncrementCount, groupAvailability, groupColors, groupNames } from "./data.ts";
+import renderList from "./list.ts"
 
-const gridElements: HTMLLIElement[] = new Array(timeIncrementCount * dayCount);
+const grid: HTMLUListElement = document.querySelector("#grid .body")!;
+const labels: HTMLUListElement = document.querySelector("#grid .labels")!;
+const legend: HTMLUListElement = document.querySelector("#grid .legend ul")!;
+const groupGridElements: HTMLDivElement[][] = initializeGroupGridElements(groupAvailability.length, dayCount, timeIncrementCount);
 
-const weekAvailability: Uint32Array = new Uint32Array(dayCount);
 let notEditing: boolean = true;
 let rightClickEdit: boolean = false;
 
@@ -15,13 +17,17 @@ let editingDirectionPrevious: number | null = null; // boolean number, 0 or 1
 let dayPrevious: number = 0;
 let timeIncrementPrevious: number = 0;
 
-export default function renderGrid() {
+export default function renderGrid(member: number) {
 
-    const grid: HTMLUListElement = document.querySelector("#grid .content")!;
-    const labels: HTMLUListElement = document.querySelector("#grid .labels")!;
+    const gridElements: HTMLDivElement[] = groupGridElements[member];
+    const weekAvailability: Uint32Array = groupAvailability[member];
+    const color: string = groupColors[member];
 
     document.addEventListener("mouseup", documentMouseUp);
     grid.ondragstart = () => false;
+    grid.innerHTML = "";
+    labels.innerHTML = "";
+    legend.innerHTML = "";
 
     let hour: number = 8;
     let am: boolean = true;
@@ -29,9 +35,9 @@ export default function renderGrid() {
     for(let timeIncrement = 0; timeIncrement < timeIncrementCount; timeIncrement++) {
 
         if((timeIncrement & 1) == 0) {
-            const element: HTMLLIElement = document.createElement("li")!;
-            element.textContent = `${hour}:00${am ? "am" : "pm"}`;
-            labels.appendChild(element);
+            const label: HTMLLIElement = document.createElement("li")!;
+            label.textContent = `${hour}:00${am ? "am" : "pm"}`;
+            labels.appendChild(label);
             hour = (hour % 12) + 1;
 
             if(hour === 12) {
@@ -40,24 +46,47 @@ export default function renderGrid() {
         }
 
         for(let day = 0; day < dayCount; day++) {
-            const element: HTMLLIElement = document.createElement("li")!;
-            const available: number = weekAvailability[day] & (1 << timeIncrement);
-            element.style = available ? "background-color: green" : "background-color: lightgrey";
-            element.addEventListener("mousedown", gridMouseDown.bind(null, day, timeIncrement));
-            element.addEventListener("mouseover", gridMouseOver.bind(null, day, timeIncrement));
-            element.addEventListener("contextmenu", gridContextMenu);
-            gridElements[timeIncrement * dayCount + day] = element;
-            grid.appendChild(element);
+            const node: HTMLLIElement = document.createElement("li")!;
+            node.style.gridTemplateColumns = `repeat(${groupAvailability.length}, 1fr)`;
+            node.addEventListener("mousedown", gridMouseDown.bind(null, weekAvailability, color, day, timeIncrement, gridElements));
+            node.addEventListener("mouseover", gridMouseOver.bind(null, weekAvailability, color, day, timeIncrement, gridElements));
+            node.addEventListener("contextmenu", gridContextMenu);
+            const gridElementIndex: number = timeIncrement * dayCount + day;
+            for(let m = 0; m < groupAvailability.length; m++) {
+                const marker = document.createElement("div");
+                const available: number = groupAvailability[m][day] & (1 << timeIncrement);
+                marker.style.backgroundColor = available ? `${groupColors[m]}` : "lightgrey";
+                if(member !== m) {
+                    marker.style.opacity = "0.3";
+                }
+                groupGridElements[m][gridElementIndex] = marker;
+                node.appendChild(marker);
+            }
+            grid.appendChild(node);
         }
     }
 
-    const element: HTMLLIElement = document.createElement("li")!;
-    element.textContent = `${hour}:00${am ? "am" : "pm"}`;
-    labels.appendChild(element);
+    const label: HTMLLIElement = document.createElement("li")!;
+    label.textContent = `${hour}:00${am ? "am" : "pm"}`;
+    labels.appendChild(label);
+
+    for(let m = 0; m < groupNames.length; m++) {
+        const legendKey: HTMLLIElement = document.createElement("li")!;
+        legendKey.textContent = groupNames[m];
+        //
+        if(member === m) {
+            legendKey.style.color = "red";
+        }
+        legendKey.addEventListener("click", () => {
+            renderGrid(m);
+        });
+        //
+        legend.appendChild(legendKey);
+    }
 
 }
 
-function gridMouseDown(day: number, timeIncrement: number, e: MouseEvent) {
+function gridMouseDown(weekAvailability: Uint32Array, color: string, day: number, timeIncrement: number, gridElements: HTMLDivElement[]) {
 
     if(rightClickEdit) {
         return;
@@ -66,32 +95,42 @@ function gridMouseDown(day: number, timeIncrement: number, e: MouseEvent) {
     weekAvailability[day] ^= (1 << timeIncrement);
                 
     const available: number = (weekAvailability[day] >>> timeIncrement) & 1;
-    (e.currentTarget as HTMLLIElement).style = available ? "background-color: green" : "background-color: lightgrey";
+    gridElements[timeIncrement * dayCount + day].style.backgroundColor = available ? `${color}` : "lightgrey";
 
     notEditing = false;
     availableStart = available;
     dayStart = day;
     timeIncrementStart = timeIncrement;
+
+    renderList();
 }
 
-function gridMouseOver(day: number, timeIncrement: number) {
+function gridMouseOver(weekAvailability: Uint32Array, color: string, day: number, timeIncrement: number, gridElements: HTMLDivElement[]) {
 
     if(notEditing) {
         return;
     }
 
-    if(day === dayPrevious) {
-        const editingDirection: number = (timeIncrement - timeIncrementPrevious) >>> 31;
-        const directionChanged: boolean = editingDirectionPrevious !== null && editingDirection !== editingDirectionPrevious;
+    // availableStart = availableStart ^ 1;
+    // dayStart = dayPrevious;
+    // timeIncrementStart = timeIncrementPrevious;
 
-        if(directionChanged) {
-            availableStart = availableStart ^ 1;
-            dayStart = dayPrevious;
-            timeIncrementStart = timeIncrementPrevious;
-        }
+    // const editingDirection: number = (timeIncrement - timeIncrementPrevious) >>> 31;
 
-        editingDirectionPrevious = editingDirection;
-    }
+    // if(day === dayPrevious) {
+    //     const editingDirection: number = (timeIncrement - timeIncrementPrevious) >>> 31;
+    //     const directionChanged: boolean = editingDirectionPrevious !== null && editingDirection !== editingDirectionPrevious;
+
+    //     if(directionChanged) {
+    //         console.log("changed", day, dayPrevious)
+    //         availableStart = availableStart ^ 1;
+    //         dayStart = dayPrevious;
+    //         timeIncrementStart = timeIncrementPrevious;
+    //     }
+
+    //     editingDirectionPrevious = editingDirection;
+
+    // }
 
     let timeIncrementMin: number;
     let timeIncrementMax: number;
@@ -121,18 +160,20 @@ function gridMouseOver(day: number, timeIncrement: number) {
         if(availableStart) {
             weekAvailability[d] |= mask;
             for(let i = timeIncrementMin; i <= timeIncrementMax; i++) {
-                gridElements[i * dayCount + d].style = "background-color: green";
+                gridElements[i * dayCount + d].style.backgroundColor = `${color}`;
             }
         } else {
             weekAvailability[d] &= ~mask;
             for(let i = timeIncrementMin; i <= timeIncrementMax; i++) {
-                gridElements[i * dayCount + d].style = "background-color: lightgrey";
+                gridElements[i * dayCount + d].style.backgroundColor = "lightgrey";
             }
         }
     }
 
     timeIncrementPrevious = timeIncrement;
     dayPrevious = day;
+
+    renderList();
 }
 
 function gridContextMenu(e: MouseEvent) {
@@ -144,5 +185,13 @@ function gridContextMenu(e: MouseEvent) {
 
 function documentMouseUp() {
     notEditing = !rightClickEdit;
-    editingDirectionPrevious = null;
+    // editingDirectionPrevious = null;
+}
+
+function initializeGroupGridElements(len: number, dayCount: number, timeIncrementCount: number) {
+    const groupGridElements: HTMLDivElement[][] = new Array(len);
+    for(let i = 0; i < len; i++) {
+        groupGridElements[i] = new Array(timeIncrementCount * dayCount);
+    }
+    return groupGridElements;
 }
