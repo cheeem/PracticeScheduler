@@ -14,8 +14,8 @@ let dayStart: number = 0;
 let timeIncrementStart: number = 0;
 
 let editingDirectionPrevious: number | null = null; // boolean number, 0 or 1
-let dayPrevious: number = 0;
-let timeIncrementPrevious: number = 0;
+let dayPrevious: number | null = null;
+let timeIncrementPrevious: number | null = null;
 
 export default function renderGrid(member: number) {
 
@@ -102,6 +102,10 @@ function gridMouseDown(weekAvailability: Uint32Array, color: string, day: number
     dayStart = day;
     timeIncrementStart = timeIncrement;
 
+    editingDirectionPrevious = null;
+    dayPrevious = null;
+    timeIncrementPrevious = null;
+
     renderList();
 }
 
@@ -111,26 +115,25 @@ function gridMouseOver(weekAvailability: Uint32Array, color: string, day: number
         return;
     }
 
-    // availableStart = availableStart ^ 1;
-    // dayStart = dayPrevious;
-    // timeIncrementStart = timeIncrementPrevious;
+    if(timeIncrementPrevious !== null && dayPrevious !== null) {
 
-    // const editingDirection: number = (timeIncrement - timeIncrementPrevious) >>> 31;
+        const editingDirection: number = Math.sign(timeIncrement - timeIncrementPrevious);
+            
+        if(editingDirection !== 0) {
 
-    // if(day === dayPrevious) {
-    //     const editingDirection: number = (timeIncrement - timeIncrementPrevious) >>> 31;
-    //     const directionChanged: boolean = editingDirectionPrevious !== null && editingDirection !== editingDirectionPrevious;
+            const directionChanged: boolean = editingDirectionPrevious !== null && editingDirection !== editingDirectionPrevious;
 
-    //     if(directionChanged) {
-    //         console.log("changed", day, dayPrevious)
-    //         availableStart = availableStart ^ 1;
-    //         dayStart = dayPrevious;
-    //         timeIncrementStart = timeIncrementPrevious;
-    //     }
+            if(directionChanged) {
+                availableStart = availableStart ^ 1;
+                dayStart = dayPrevious;
+                timeIncrementStart = timeIncrementPrevious;
+            }
 
-    //     editingDirectionPrevious = editingDirection;
+            editingDirectionPrevious = editingDirection;
+            
+        }
 
-    // }
+    }
 
     let timeIncrementMin: number;
     let timeIncrementMax: number;
@@ -185,7 +188,6 @@ function gridContextMenu(e: MouseEvent) {
 
 function documentMouseUp() {
     notEditing = !rightClickEdit;
-    // editingDirectionPrevious = null;
 }
 
 function initializeGroupGridElements(len: number, dayCount: number, timeIncrementCount: number) {
