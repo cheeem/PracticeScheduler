@@ -34,8 +34,10 @@ export default function renderGrid(member: number) {
 
     for(let timeIncrement = 0; timeIncrement < timeIncrementCount; timeIncrement++) {
 
-        if((timeIncrement & 1) == 0) {
-            const label: HTMLLIElement = document.createElement("li")!;
+        const odd = timeIncrement & 1;
+
+        if(!odd) {
+            const label: HTMLLIElement = document.createElement("li");
             label.textContent = `${hour}:00${am ? "am" : "pm"}`;
             labels.appendChild(label);
             hour = (hour % 12) + 1;
@@ -46,41 +48,62 @@ export default function renderGrid(member: number) {
         }
 
         for(let day = 0; day < dayCount; day++) {
-            const node: HTMLLIElement = document.createElement("li")!;
+
+            const node: HTMLLIElement = document.createElement("li");
+
+            if(odd) {
+                node.className = "odd";
+            }
+
             node.style.gridTemplateColumns = `repeat(${groupAvailability.length}, 1fr)`;
             node.addEventListener("mousedown", gridMouseDown.bind(null, weekAvailability, color, day, timeIncrement, gridElements));
             node.addEventListener("mouseover", gridMouseOver.bind(null, weekAvailability, color, day, timeIncrement, gridElements));
             node.addEventListener("contextmenu", gridContextMenu);
+
             const gridElementIndex: number = timeIncrement * dayCount + day;
+
             for(let m = 0; m < groupAvailability.length; m++) {
                 const marker = document.createElement("div");
                 const available: number = groupAvailability[m][day] & (1 << timeIncrement);
+
                 marker.style.backgroundColor = available ? `${groupColors[m]}` : "lightgrey";
                 if(member !== m) {
                     marker.style.opacity = "0.3";
                 }
+
                 groupGridElements[m][gridElementIndex] = marker;
                 node.appendChild(marker);
             }
+
             grid.appendChild(node);
+
         }
     }
 
-    const label: HTMLLIElement = document.createElement("li")!;
+    const label: HTMLLIElement = document.createElement("li");
     label.textContent = `${hour}:00${am ? "am" : "pm"}`;
     labels.appendChild(label);
 
     for(let m = 0; m < groupNames.length; m++) {
-        const legendKey: HTMLLIElement = document.createElement("li")!;
-        legendKey.textContent = groupNames[m];
+
+        const legendKey: HTMLLIElement = document.createElement("li");
+        const legendKeyColor: HTMLDivElement = document.createElement("div");
+        const legendKeyText: HTMLParagraphElement = document.createElement("p");
+
+        legendKeyColor.style.backgroundColor = groupColors[m];
+        legendKeyText.textContent = groupNames[m];
+
         //
         if(member === m) {
-            legendKey.style.color = "red";
+            legendKeyText.style.textDecoration = "underline";
         }
         legendKey.addEventListener("click", () => {
             renderGrid(m);
         });
         //
+
+        legendKey.appendChild(legendKeyColor);
+        legendKey.appendChild(legendKeyText);
         legend.appendChild(legendKey);
     }
 
@@ -130,7 +153,7 @@ function gridMouseOver(weekAvailability: Uint32Array, color: string, day: number
             }
 
             editingDirectionPrevious = editingDirection;
-            
+
         }
 
     }
