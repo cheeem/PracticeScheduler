@@ -11,20 +11,22 @@ export const weekDays: string[] = [
     "Sunday",
 ];
 
-export const groupAvailability: Uint32Array[] = [
-    new Uint32Array(dayCount), 
-    new Uint32Array(dayCount), 
-    new Uint32Array(dayCount), 
-    new Uint32Array(dayCount),
-    // new Uint32Array(dayCount),
+const groupAvailabilityJson = window.localStorage.getItem("groupAvailability");
+export const groupAvailability: number[][] = groupAvailabilityJson !== null ? JSON.parse(groupAvailabilityJson) : [
+    new Array(dayCount).fill(0), 
+    new Array(dayCount).fill(0), 
+    new Array(dayCount).fill(0), 
+    new Array(dayCount).fill(0),
 ];
+export function saveGrid() {
+    window.localStorage.setItem("groupAvailability", JSON.stringify(groupAvailability));
+}
 
 export const groupNames: string[] = [
     "zoe",
     "silver",
     "lockett",
     "lili",
-    // "chuck"
 ];
 
 export const groupColors: string[] = [
@@ -32,5 +34,4 @@ export const groupColors: string[] = [
     "green",
     "blue",
     "yellow",
-    // "purple"
 ];

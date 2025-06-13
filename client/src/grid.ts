@@ -1,4 +1,4 @@
-import { dayCount, timeIncrementCount, groupAvailability, groupColors, groupNames } from "./data.ts";
+import { dayCount, timeIncrementCount, groupAvailability, groupColors, groupNames, saveGrid } from "./data.ts";
 import renderList from "./list.ts"
 
 const grid: HTMLUListElement = document.querySelector("#grid .body")!;
@@ -20,7 +20,7 @@ let timeIncrementPrevious: number | null = null;
 export default function renderGrid(member: number) {
 
     const gridElements: HTMLDivElement[] = groupGridElements[member];
-    const weekAvailability: Uint32Array = groupAvailability[member];
+    const weekAvailability: number[] = groupAvailability[member];
     const color: string = groupColors[member];
 
     document.addEventListener("mouseup", documentMouseUp);
@@ -107,9 +107,11 @@ export default function renderGrid(member: number) {
         legend.appendChild(legendKey);
     }
 
+    renderList();
+
 }
 
-function gridMouseDown(weekAvailability: Uint32Array, color: string, day: number, timeIncrement: number, gridElements: HTMLDivElement[]) {
+function gridMouseDown(weekAvailability: number[], color: string, day: number, timeIncrement: number, gridElements: HTMLDivElement[]) {
 
     if(rightClickEdit) {
         return;
@@ -129,10 +131,11 @@ function gridMouseDown(weekAvailability: Uint32Array, color: string, day: number
     dayPrevious = null;
     timeIncrementPrevious = null;
 
+    saveGrid();
     renderList();
 }
 
-function gridMouseOver(weekAvailability: Uint32Array, color: string, day: number, timeIncrement: number, gridElements: HTMLDivElement[]) {
+function gridMouseOver(weekAvailability: number[], color: string, day: number, timeIncrement: number, gridElements: HTMLDivElement[]) {
 
     if(notEditing) {
         return;
@@ -199,6 +202,7 @@ function gridMouseOver(weekAvailability: Uint32Array, color: string, day: number
     timeIncrementPrevious = timeIncrement;
     dayPrevious = day;
 
+    saveGrid();
     renderList();
 }
 

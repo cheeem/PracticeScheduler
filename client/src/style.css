@@ -11,7 +11,7 @@ li {
 }
 
 html, body, #app, main {
-    height: 100%;
+    min-height: 100%;
 }
 
 main {
@@ -69,10 +69,9 @@ main {
     width: 1rem;
 }
 
-#grid .legend ul {
-    display: flex;
-    justify-content: space-between;
-}
+/* #grid .legend ul {
+    display: grid;
+} */
 
 #grid .legend li {
     display: flex;
@@ -87,4 +86,32 @@ main {
     width: 1em;
 
     border: 1px solid black;
+}
+
+#lists > ul {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 2em;
+}
+
+#lists > ul > li {
+    display: flex;
+    gap: 1em;
+}
+
+#lists .members li {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+#lists .members li div {
+    height: 1em;
+    width: 1em;
+
+    border: 1px solid black;
+}
+
+#lists .members li p {
+    font-weight: 600;
 }
