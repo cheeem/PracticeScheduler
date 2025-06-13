@@ -47,6 +47,7 @@ main {
 }
 
 #grid .labels li {
+    font-weight: 600;
     font-size: 0.9em;
 }
 
@@ -129,11 +130,6 @@ main {
     gap: 2rem;
 }
 
-#lists > ul > li {
-    display: flex;
-    gap: 1rem;
-}
-
 #lists .members li {
     display: flex;
     align-items: center;
@@ -148,5 +144,15 @@ main {
 }
 
 #lists .members li p {
+    font-weight: 600;
+}
+
+#lists .list {
+    display: grid;
+    grid-template-columns: auto auto auto auto;
+    gap: 0.2em;
+}
+
+#lists .list .hours {
     font-weight: 600;
 }

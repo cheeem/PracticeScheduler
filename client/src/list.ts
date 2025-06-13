@@ -45,25 +45,25 @@ function renderList(members: number[]) {
             continue;
         }
 
-        let timeIncrementFirst = null;
-        let timeIncrementLast = null;
+        let timeIncrementStart = null;
+        let timeIncrementEnd = null;
 
         for(let timeIncrement = 0; timeIncrement < timeIncrementCount; timeIncrement++) {
             const available = (dayAvailability >>> timeIncrement) & 1;
 
             if(available) {
 
-                timeIncrementLast = timeIncrement;
+                timeIncrementEnd = timeIncrement;
 
-                if(timeIncrementFirst === null) {
-                    timeIncrementFirst = timeIncrement;
+                if(timeIncrementStart === null) {
+                    timeIncrementStart = timeIncrement;
                 }
 
             } else {
 
-                if(timeIncrementFirst !== null) {
-                    availabilityPeriods.push(day, timeIncrementFirst, timeIncrementLast as number);
-                    timeIncrementFirst = null;
+                if(timeIncrementStart !== null) {
+                    availabilityPeriods.push(day, timeIncrementStart, timeIncrementEnd! + 1);
+                    timeIncrementStart = null;
                 }
 
             }
@@ -103,12 +103,29 @@ function renderList(members: number[]) {
 
     for(let i = 0; i < availabilityPeriods.length; i += 3) {
         const day: number = availabilityPeriods[i];
-        const timeIncrementFirst: number = availabilityPeriods[i+1];
-        const timeIncrementLast: number = availabilityPeriods[i+2];
+        const timeIncrementStart: number = availabilityPeriods[i+1];
+        const timeIncrementEnd: number = availabilityPeriods[i+2];
 
-        const period: HTMLLIElement = document.createElement("li");
-        period.textContent = `${(timeIncrementLast-timeIncrementFirst+1) / 2}hr ${weekDays[day]}\t${formatTime(timeIncrementFirst)} to ${formatTime(timeIncrementLast+1)}`;
-        list.appendChild(period);
+        const periodHours: HTMLLIElement = document.createElement("li");
+        const periodDay: HTMLLIElement = document.createElement("li");
+        const periodTimeStart: HTMLLIElement = document.createElement("li");
+        const periodTimeEnd: HTMLLIElement = document.createElement("li");
+
+        periodHours.className = "hours";
+        periodHours.textContent = `${(timeIncrementEnd-timeIncrementStart) / 2}hr`;
+        periodDay.className = "day";
+        periodDay.textContent = weekDays[day];
+        periodTimeStart.className = "start";
+        periodTimeStart.textContent = formatTime(timeIncrementStart);
+        periodTimeEnd.className = "end";
+        periodTimeEnd.textContent = formatTime(timeIncrementEnd);
+
+        // periodHours.textContent = `${(timeIncrementEnd-timeIncrementStart) / 2}hr ${weekDays[day]}\t${formatTime(timeIncrementStart)} to ${formatTime(timeIncrementEnd)}`;
+        
+        list.appendChild(periodHours);
+        list.appendChild(periodDay);
+        list.appendChild(periodTimeStart);
+        list.appendChild(periodTimeEnd);
     }
 
 

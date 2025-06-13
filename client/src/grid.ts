@@ -75,7 +75,7 @@ export default function renderGrid(member: number) {
 
                 marker.style.backgroundColor = available ? `${groupColors[m]}` : "lightgrey";
                 if(member !== m) {
-                    marker.style.opacity = "0.3";
+                    marker.style.opacity = "0.2";
                 }
 
                 groupGridElements[m][gridElementIndex] = marker;

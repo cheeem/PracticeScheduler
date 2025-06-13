@@ -17,6 +17,7 @@ export const groupAvailability: number[][] = groupAvailabilityJson !== null ? JS
     new Array(dayCount).fill(0), 
     new Array(dayCount).fill(0), 
     new Array(dayCount).fill(0),
+    // new Array(dayCount).fill(0),
 ];
 export function saveGrid() {
     window.localStorage.setItem("groupAvailability", JSON.stringify(groupAvailability));
@@ -27,11 +28,20 @@ export const groupNames: string[] = [
     "silver",
     "lockett",
     "lili",
+    // "chuck",
 ];
 
-export const groupColors: string[] = [
-    "red",
-    "green",
-    "blue",
-    "yellow",
-];
+export const groupColors: string[] = 
+    Array
+        .from({ length: groupAvailability.length })
+        .map((_: unknown, i: number) => `hsl(${(360 / groupAvailability.length) * i}, 100%, 50%)`);
+
+//console.log(groupColors)
+
+// [
+//     "red",
+//     "green",
+//     "blue",
+//     "yellow",
+// ];
+
