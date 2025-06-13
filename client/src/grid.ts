@@ -1,4 +1,4 @@
-import { dayCount, timeIncrementCount, groupAvailability, groupColors, groupNames, saveGrid } from "./data.ts";
+import { weekDays, dayCount, timeIncrementCount, groupAvailability, groupColors, groupNames, saveGrid } from "./data.ts";
 import renderList from "./list.ts"
 
 const grid: HTMLUListElement = document.querySelector("#grid .body")!;
@@ -31,6 +31,13 @@ export default function renderGrid(member: number) {
 
     let hour: number = 8;
     let am: boolean = true;
+
+    for(let day = 0; day < dayCount; day++) {
+        const weekDay: HTMLLIElement = document.createElement("li");
+        weekDay.className = "day";
+        weekDay.textContent = weekDays[day].slice(0, 3);
+        grid.appendChild(weekDay);
+    }
 
     for(let timeIncrement = 0; timeIncrement < timeIncrementCount; timeIncrement++) {
 

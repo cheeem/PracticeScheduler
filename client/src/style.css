@@ -21,16 +21,21 @@ main {
     padding: 2rem 5rem;
 }
 
-#grid .content {
+#grid {
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
 }
 
+#grid .content {
+    display: grid;
+    gap: 1rem;
+}
+
 #grid .labels {
     display: grid;
     gap: 0.79rem;
-    translate: 0 -0.7rem;
+    translate: 0 calc(-0.7rem + 1.4em);
 }
 
 #grid .labels li {
@@ -53,15 +58,23 @@ main {
     border-width: 1px 3px 0 3px;
 }
 
+#grid .body .day {
+    text-align: center;
+    font-weight: 600;
+
+    height: unset;
+    border: none;
+}
+
 #grid .body .odd {
     border-bottom-width: 2px;
 }
 
-#grid .body li:nth-of-type(-n + 7) {
+#grid .body li:nth-of-type(-n + 14) {
     border-top-width: 3px;
 }
 
-#grid .body li:nth-of-type(n + 218) {
+#grid .body li:nth-of-type(n + 225) {
     border-bottom-width: 3px;
 }
 
@@ -69,9 +82,19 @@ main {
     width: 1rem;
 }
 
-/* #grid .legend ul {
+#grid .legend {
     display: grid;
-} */
+    gap: 0.5rem;
+}
+
+#grid .legend div > p {
+    font-size: 0.8rem;
+}
+
+#grid .legend ul {
+    display: flex;
+    gap: 1rem;
+}
 
 #grid .legend li {
     display: flex;
@@ -82,21 +105,25 @@ main {
 }
 
 #grid .legend li div {
-    height: 1em;
-    width: 1em;
+    height: 1rem;
+    width: 1rem;
 
     border: 1px solid black;
+}
+
+#grid .legend li p {
+    font-weight: 600;
 }
 
 #lists > ul {
     display: grid;
     grid-template-columns: auto auto;
-    gap: 2em;
+    gap: 2rem;
 }
 
 #lists > ul > li {
     display: flex;
-    gap: 1em;
+    gap: 1rem;
 }
 
 #lists .members li {
@@ -106,8 +133,8 @@ main {
 }
 
 #lists .members li div {
-    height: 1em;
-    width: 1em;
+    height: 1rem;
+    width: 1rem;
 
     border: 1px solid black;
 }

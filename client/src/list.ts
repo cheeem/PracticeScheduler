@@ -107,7 +107,7 @@ function renderList(members: number[]) {
         const timeIncrementLast: number = availabilityPeriods[i+2];
 
         const period: HTMLLIElement = document.createElement("li");
-        period.innerHTML = `${weekDays[day]}\t${formatTime(timeIncrementFirst)} to ${formatTime(timeIncrementLast + 1)}`;
+        period.textContent = `${(timeIncrementLast-timeIncrementFirst+1) / 2}hr ${weekDays[day]}\t${formatTime(timeIncrementFirst)} to ${formatTime(timeIncrementLast+1)}`;
         list.appendChild(period);
     }
 
