@@ -103,7 +103,8 @@ export default function gridInitialize() {
         }
         legendKeyTexts.push(legendKeyText)
         legendKey.addEventListener("click", () => {
-            legendKeyTexts.forEach(e => e.style.textDecoration = member === m ? "underline" : "none");
+            legendKeyTexts.forEach(e => e.style.textDecoration = "none");
+            legendKeyText.style.textDecoration = "underline";
             member = m;
             gridRender();
         });
