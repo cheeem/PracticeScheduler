@@ -218,14 +218,14 @@ function gridMouseOver(day: number, timeIncrement: number) {
 
     for(let d = dayMin; d <= dayMax; d++) {
         if(availableStart) {
-            groupAvailability[member * dayCount + day] |= mask;
+            groupAvailability[member * dayCount + d] |= mask;
             for(let i = timeIncrementMin; i <= timeIncrementMax; i++) {
-                groupGridElements[(member * dayCount + day) * timeIncrementCount + i].style.backgroundColor = groupColors[member];
+                groupGridElements[(member * dayCount + d) * timeIncrementCount + i].style.backgroundColor = groupColors[member];
             }
         } else {
-            groupAvailability[member * dayCount + day] &= ~mask;
+            groupAvailability[member * dayCount + d] &= ~mask;
             for(let i = timeIncrementMin; i <= timeIncrementMax; i++) {
-                groupGridElements[(member * dayCount + day) * timeIncrementCount + i].style.backgroundColor = "lightgrey";
+                groupGridElements[(member * dayCount + d) * timeIncrementCount + i].style.backgroundColor = "lightgrey";
             }
         }
     }
