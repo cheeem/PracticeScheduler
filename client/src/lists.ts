@@ -1,12 +1,11 @@
-import { weekDays, groupNames, groupColors, groupAvailability, dayCount, timeIncrementCount } from "./data";
+import { weekDays, memberCount, dayCount, timeIncrementCount, groupNames, groupColors, groupAvailability, } from "./data";
 
 const lists: HTMLUListElement = document.querySelector("#lists ul")!;
 
-export default function renderLists() {
+export default function listsRender() {
 
     lists.innerHTML = "";
 
-    const memberCount: number = groupAvailability.length;
     const members: number[] = [];
     const n: number = Math.pow(2, memberCount);
 
@@ -20,13 +19,13 @@ export default function renderLists() {
         }
 
         if (members.length > 1) {
-            renderList([...members])
+            listCompute([...members]);
         }
     }
 
 }
 
-function renderList(members: number[]) {
+function listCompute(members: number[]) {
 
     const weekAvailability: number[] = new Array(dayCount).fill(0xFFFFFFFF);
     const availabilityPeriods: number[] = [];
@@ -34,7 +33,7 @@ function renderList(members: number[]) {
     for(let i = 0; i < members.length; i++) {
         const member: number = members[i];
         for(let day = 0; day < dayCount; day++) {
-            weekAvailability[day] &= groupAvailability[member][day];
+            weekAvailability[day] &= groupAvailability[member * dayCount + day];
         }
     }
 
@@ -70,16 +69,20 @@ function renderList(members: number[]) {
         }
     }
 
-    if(availabilityPeriods.length === 0) {
-        return;
+    if(availabilityPeriods.length > 0) {
+        listRender(members, availabilityPeriods);
     }
+
+}
+
+function listRender(members: number[], availabilityPeriods: number[]) {
 
     const listMembersContainer: HTMLLIElement = document.createElement("li");
     const listContainer: HTMLLIElement = document.createElement("li");
     const listMembers: HTMLUListElement = document.createElement("ul")
     const list: HTMLUListElement = document.createElement("ul");
 
-    const order: string = (groupAvailability.length - members.length).toString();
+    const order: string = (memberCount - members.length).toString();
 
     listMembersContainer.style.order = order;
     listContainer.style.order = order;

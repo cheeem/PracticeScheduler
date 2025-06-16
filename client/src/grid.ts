@@ -1,10 +1,9 @@
-import { weekDays, dayCount, timeIncrementCount, groupAvailability, groupColors, groupNames, saveGrid } from "./data.ts";
-import renderList from "./list.ts"
+import { weekDays, memberCount, dayCount, timeIncrementCount, groupAvailability, groupColors, groupNames } from "./data.ts";
+import listsRender from "./lists.ts";
 
-const grid: HTMLUListElement = document.querySelector("#grid .body")!;
-const labels: HTMLUListElement = document.querySelector("#grid .labels")!;
-const legend: HTMLUListElement = document.querySelector("#grid .legend ul")!;
-const groupGridElements: HTMLDivElement[][] = initializeGroupGridElements(groupAvailability.length, dayCount, timeIncrementCount);
+const groupGridElements: HTMLDivElement[] = new Array(memberCount * dayCount * timeIncrementCount);
+
+let member: number = 2;
 
 let notEditing: boolean = true;
 let rightClickEdit: boolean = false;
@@ -17,17 +16,14 @@ let editingDirectionPrevious: number | null = null; // boolean number, 0 or 1
 let dayPrevious: number | null = null;
 let timeIncrementPrevious: number | null = null;
 
-export default function renderGrid(member: number) {
+export default function gridInitialize() {
 
-    const gridElements: HTMLDivElement[] = groupGridElements[member];
-    const weekAvailability: number[] = groupAvailability[member];
-    const color: string = groupColors[member];
+    const grid: HTMLUListElement = document.querySelector("#grid .body")!;
+    const labels: HTMLUListElement = document.querySelector("#grid .labels")!;
+    const legend: HTMLUListElement = document.querySelector("#grid .legend ul")!;
 
     document.addEventListener("mouseup", documentMouseUp);
     grid.ondragstart = () => false;
-    grid.innerHTML = "";
-    labels.innerHTML = "";
-    legend.innerHTML = "";
 
     let hour: number = 8;
     let am: boolean = true;
@@ -62,23 +58,20 @@ export default function renderGrid(member: number) {
                 node.className = "odd";
             }
 
-            node.style.gridTemplateColumns = `repeat(${groupAvailability.length}, 1fr)`;
-            node.addEventListener("mousedown", gridMouseDown.bind(null, weekAvailability, color, day, timeIncrement, gridElements));
-            node.addEventListener("mouseover", gridMouseOver.bind(null, weekAvailability, color, day, timeIncrement, gridElements));
+            node.style.gridTemplateColumns = `repeat(${memberCount}, 1fr)`;
+            node.addEventListener("mousedown", gridMouseDown.bind(null, day, timeIncrement));
+            node.addEventListener("mouseover", gridMouseOver.bind(null, day, timeIncrement));
             node.addEventListener("contextmenu", gridContextMenu);
 
-            const gridElementIndex: number = timeIncrement * dayCount + day;
-
-            for(let m = 0; m < groupAvailability.length; m++) {
+            for(let m = 0; m < memberCount; m++) {
                 const marker = document.createElement("div");
-                const available: number = groupAvailability[m][day] & (1 << timeIncrement);
+                const available: number = groupAvailability[m * dayCount + day] & (1 << timeIncrement);
 
-                marker.style.backgroundColor = available ? `${groupColors[m]}` : "lightgrey";
-                if(member !== m) {
-                    marker.style.opacity = "0.2";
-                }
+                marker.style.backgroundColor = available ? groupColors[m] : "lightgrey";
 
-                groupGridElements[m][gridElementIndex] = marker;
+                // marker.innerHTML = `<p style="font-size: 0.7em">${(m * dayCount + day) * dayCount + timeIncrement}</p>`
+
+                groupGridElements[(m * dayCount + day) * timeIncrementCount + timeIncrement] = marker;
                 node.appendChild(marker);
             }
 
@@ -90,6 +83,10 @@ export default function renderGrid(member: number) {
     const label: HTMLLIElement = document.createElement("li");
     label.textContent = `${hour}:00${am ? "am" : "pm"}`;
     labels.appendChild(label);
+
+    //
+    const legendKeyTexts: HTMLParagraphElement[] = []
+    //
 
     for(let m = 0; m < groupNames.length; m++) {
 
@@ -104,8 +101,11 @@ export default function renderGrid(member: number) {
         if(member === m) {
             legendKeyText.style.textDecoration = "underline";
         }
+        legendKeyTexts.push(legendKeyText)
         legendKey.addEventListener("click", () => {
-            renderGrid(m);
+            legendKeyTexts.forEach(e => e.style.textDecoration = member === m ? "underline" : "none");
+            member = m;
+            gridRender();
         });
         //
 
@@ -114,20 +114,44 @@ export default function renderGrid(member: number) {
         legend.appendChild(legendKey);
     }
 
-    renderList();
+    listsRender();
 
 }
 
-function gridMouseDown(weekAvailability: number[], color: string, day: number, timeIncrement: number, gridElements: HTMLDivElement[]) {
+export function gridRender() {
+    
+    for(let m = 0; m < memberCount; m++) {
+        for(let d = 0; d < dayCount; d++) {
+            for(let i = 0; i < timeIncrementCount; i++) {
+                const marker: HTMLDivElement = groupGridElements[(m * dayCount + d) * timeIncrementCount + i];
+                const available: number = groupAvailability[m * dayCount + d] & (1 << i);
+
+                marker.style.backgroundColor = available ? groupColors[m] : "lightgrey";
+                // if(member !== m) {
+                //     marker.style.opacity = "0.2";
+                // }
+            }
+        }
+    }
+
+    listsRender(); 
+
+}
+
+function gridSave() {
+    window.localStorage.setItem("groupAvailability", JSON.stringify(groupAvailability));
+}
+
+function gridMouseDown(day: number, timeIncrement: number) {
 
     if(rightClickEdit) {
         return;
     }
 
-    weekAvailability[day] ^= (1 << timeIncrement);
+    groupAvailability[member * dayCount + day] ^= (1 << timeIncrement);
                 
-    const available: number = (weekAvailability[day] >>> timeIncrement) & 1;
-    gridElements[timeIncrement * dayCount + day].style.backgroundColor = available ? `${color}` : "lightgrey";
+    const available: number = (groupAvailability[member * dayCount + day] >>> timeIncrement) & 1;
+    groupGridElements[(member * dayCount + day) * timeIncrementCount + timeIncrement].style.backgroundColor = available ? groupColors[member] : "lightgrey";
 
     notEditing = false;
     availableStart = available;
@@ -138,11 +162,11 @@ function gridMouseDown(weekAvailability: number[], color: string, day: number, t
     dayPrevious = null;
     timeIncrementPrevious = null;
 
-    saveGrid();
-    renderList();
+    gridSave();
+    listsRender();
 }
 
-function gridMouseOver(weekAvailability: number[], color: string, day: number, timeIncrement: number, gridElements: HTMLDivElement[]) {
+function gridMouseOver(day: number, timeIncrement: number) {
 
     if(notEditing) {
         return;
@@ -194,14 +218,14 @@ function gridMouseOver(weekAvailability: number[], color: string, day: number, t
 
     for(let d = dayMin; d <= dayMax; d++) {
         if(availableStart) {
-            weekAvailability[d] |= mask;
+            groupAvailability[member * dayCount + day] |= mask;
             for(let i = timeIncrementMin; i <= timeIncrementMax; i++) {
-                gridElements[i * dayCount + d].style.backgroundColor = `${color}`;
+                groupGridElements[(member * dayCount + day) * timeIncrementCount + i].style.backgroundColor = groupColors[member];
             }
         } else {
-            weekAvailability[d] &= ~mask;
+            groupAvailability[member * dayCount + day] &= ~mask;
             for(let i = timeIncrementMin; i <= timeIncrementMax; i++) {
-                gridElements[i * dayCount + d].style.backgroundColor = "lightgrey";
+                groupGridElements[(member * dayCount + day) * timeIncrementCount + i].style.backgroundColor = "lightgrey";
             }
         }
     }
@@ -209,8 +233,8 @@ function gridMouseOver(weekAvailability: number[], color: string, day: number, t
     timeIncrementPrevious = timeIncrement;
     dayPrevious = day;
 
-    saveGrid();
-    renderList();
+    gridSave();
+    listsRender();
 }
 
 function gridContextMenu(e: MouseEvent) {
@@ -222,12 +246,4 @@ function gridContextMenu(e: MouseEvent) {
 
 function documentMouseUp() {
     notEditing = !rightClickEdit;
-}
-
-function initializeGroupGridElements(len: number, dayCount: number, timeIncrementCount: number) {
-    const groupGridElements: HTMLDivElement[][] = new Array(len);
-    for(let i = 0; i < len; i++) {
-        groupGridElements[i] = new Array(timeIncrementCount * dayCount);
-    }
-    return groupGridElements;
 }
