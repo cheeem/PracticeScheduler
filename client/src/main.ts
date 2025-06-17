@@ -1,5 +1,5 @@
 import "./style.css";
 import renderGrid from "./grid.ts";
 
-localStorage.clear();
+// localStorage.clear();
 renderGrid();

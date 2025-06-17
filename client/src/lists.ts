@@ -6,7 +6,7 @@ export default function listsRender() {
 
     lists.innerHTML = "";
 
-    const members: number[] = [];
+    const members: number[] = new Array(memberCount);
     const n: number = Math.pow(2, memberCount);
 
     for (let i = 0; i < n; i++) {
@@ -19,7 +19,7 @@ export default function listsRender() {
         }
 
         if (members.length > 1) {
-            listCompute([...members]);
+            listCompute(members);
         }
     }
 
@@ -44,8 +44,8 @@ function listCompute(members: number[]) {
             continue;
         }
 
-        let timeIncrementStart = null;
-        let timeIncrementEnd = null;
+        let timeIncrementStart: number | null = null;
+        let timeIncrementEnd: number | null = null;
 
         for(let timeIncrement = 0; timeIncrement < timeIncrementCount; timeIncrement++) {
             const available = (dayAvailability >>> timeIncrement) & 1;
