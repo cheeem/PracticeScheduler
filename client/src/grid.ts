@@ -1,7 +1,8 @@
-import { weekDays, memberCount, dayCount, timeIncrementCount, groupAvailability, groupColors, groupNames } from "./data.ts";
+import { weekDayNames, weekDayNumbers, memberCount, dayCount, timeIncrementCount, groupAvailability, groupColors, groupNames, weekNext, weekPrevious } from "./data.ts";
 import listsRender from "./lists.ts";
 
 const groupGridElements: HTMLDivElement[] = new Array(memberCount * dayCount * timeIncrementCount);
+const weekDayNumberElements: HTMLParagraphElement[] = new Array(dayCount);
 
 let member: number = 2;
 
@@ -16,11 +17,14 @@ let editingDirectionPrevious: number | null = null; // boolean number, 0 or 1
 let dayPrevious: number | null = null;
 let timeIncrementPrevious: number | null = null;
 
+function documentMouseUp() {
+    notEditing = !rightClickEdit;
+}
+
 export default function gridInitialize() {
 
     const grid: HTMLUListElement = document.querySelector("#grid .body")!;
     const labels: HTMLUListElement = document.querySelector("#grid .labels")!;
-    const legend: HTMLUListElement = document.querySelector("#grid .legend ul")!;
 
     document.addEventListener("mouseup", documentMouseUp);
     grid.ondragstart = () => false;
@@ -28,12 +32,7 @@ export default function gridInitialize() {
     let hour: number = 8;
     let am: boolean = true;
 
-    for(let day = 0; day < dayCount; day++) {
-        const weekDay: HTMLLIElement = document.createElement("li");
-        weekDay.className = "day";
-        weekDay.textContent = weekDays[day].slice(0, 3);
-        grid.appendChild(weekDay);
-    }
+    weekInitialize(grid);
 
     for(let timeIncrement = 0; timeIncrement < timeIncrementCount; timeIncrement++) {
 
@@ -43,6 +42,7 @@ export default function gridInitialize() {
             const label: HTMLLIElement = document.createElement("li");
             label.textContent = `${hour}:00${am ? "am" : "pm"}`;
             labels.appendChild(label);
+
             hour = (hour % 12) + 1;
 
             if(hour === 12) {
@@ -69,8 +69,6 @@ export default function gridInitialize() {
 
                 marker.style.backgroundColor = available ? groupColors[m] : "lightgrey";
 
-                // marker.innerHTML = `<p style="font-size: 0.7em">${(m * dayCount + day) * dayCount + timeIncrement}</p>`
-
                 groupGridElements[(m * dayCount + day) * timeIncrementCount + timeIncrement] = marker;
                 node.appendChild(marker);
             }
@@ -84,42 +82,17 @@ export default function gridInitialize() {
     label.textContent = `${hour}:00${am ? "am" : "pm"}`;
     labels.appendChild(label);
 
-    //
-    const legendKeyTexts: HTMLParagraphElement[] = []
-    //
-
-    for(let m = 0; m < groupNames.length; m++) {
-
-        const legendKey: HTMLLIElement = document.createElement("li");
-        const legendKeyColor: HTMLDivElement = document.createElement("div");
-        const legendKeyText: HTMLParagraphElement = document.createElement("p");
-
-        legendKeyColor.style.backgroundColor = groupColors[m];
-        legendKeyText.textContent = groupNames[m];
-
-        //
-        if(member === m) {
-            legendKeyText.style.textDecoration = "underline";
-        }
-        legendKeyTexts.push(legendKeyText)
-        legendKey.addEventListener("click", () => {
-            legendKeyTexts.forEach(e => e.style.textDecoration = "none");
-            legendKeyText.style.textDecoration = "underline";
-            member = m;
-            gridRender();
-        });
-        //
-
-        legendKey.appendChild(legendKeyColor);
-        legendKey.appendChild(legendKeyText);
-        legend.appendChild(legendKey);
-    }
+    legendInitialize();
 
     listsRender();
 
 }
 
 export function gridRender() {
+
+    for(let d = 0; d < dayCount; d++) {
+        weekDayNumberElements[d].textContent = weekDayNumbers[d].toString();
+    }
     
     for(let m = 0; m < memberCount; m++) {
         for(let d = 0; d < dayCount; d++) {
@@ -244,7 +217,81 @@ function gridContextMenu(e: MouseEvent) {
     rightClickEdit = !rightClickEdit;
 }
 
+function weekInitialize(grid: HTMLUListElement) {
+    const firstWeekDay = weekDayInitialize(grid, 0);
+    const weekPreviousButton = document.createElement("button");
+    weekPreviousButton.className = "week-button previous";
+    weekPreviousButton.textContent = "<";
+    weekPreviousButton.addEventListener("click", weekPrevious)
+    firstWeekDay.appendChild(weekPreviousButton);
 
-function documentMouseUp() {
-    notEditing = !rightClickEdit;
+    for(let day = 1; day < dayCount - 1; day++) {
+        weekDayInitialize(grid, day);
+    }
+
+    const lastWeekDay = weekDayInitialize(grid, dayCount - 1);
+    const weekNextButton = document.createElement("button");
+    weekNextButton.className = "week-button next";
+    weekNextButton.textContent = ">";
+    weekNextButton.addEventListener("click", weekNext)
+    lastWeekDay.appendChild(weekNextButton);
+}
+
+function weekDayInitialize(grid: HTMLUListElement, day: number): HTMLLIElement {
+
+    const weekDay: HTMLLIElement = document.createElement("li");
+    const weekDayNumber: HTMLParagraphElement = document.createElement("p");
+    const weekDayName: HTMLParagraphElement = document.createElement("p");
+
+    weekDay.className = "day";
+    weekDayNumber.className = "number";
+    weekDayNumber.textContent = weekDayNumbers[day].toString();
+    weekDayName.className = "name";
+    weekDayName.textContent = weekDayNames[day].slice(0, 3);
+
+    weekDayNumberElements[day] = weekDayNumber;
+
+    weekDay.appendChild(weekDayNumber);
+    weekDay.appendChild(weekDayName);
+    grid.appendChild(weekDay);
+
+    return weekDay;
+
+}
+
+function legendInitialize() {
+
+    const legend: HTMLUListElement = document.querySelector("#grid .legend ul")!;
+    
+    //
+    const legendKeyTexts: HTMLParagraphElement[] = [];
+    //
+
+    for(let m = 0; m < groupNames.length; m++) {
+
+        const legendKey: HTMLLIElement = document.createElement("li");
+        const legendKeyColor: HTMLDivElement = document.createElement("div");
+        const legendKeyText: HTMLParagraphElement = document.createElement("p");
+
+        legendKeyColor.style.backgroundColor = groupColors[m];
+        legendKeyText.textContent = groupNames[m];
+
+        //
+        if(member === m) {
+            legendKeyText.style.textDecoration = "underline";
+        }
+        legendKeyTexts.push(legendKeyText)
+        legendKey.addEventListener("click", () => {
+            legendKeyTexts.forEach(e => e.style.textDecoration = "none");
+            legendKeyText.style.textDecoration = "underline";
+            member = m;
+            gridRender();
+        });
+        //
+
+        legendKey.appendChild(legendKeyColor);
+        legendKey.appendChild(legendKeyText);
+        legend.appendChild(legendKey);
+    }
+
 }

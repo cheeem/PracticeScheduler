@@ -43,7 +43,7 @@ main {
 #grid .labels {
     display: grid;
     gap: 0.79rem;
-    translate: 0 calc(-0.7rem + 1.4em);
+    translate: 0 calc(-0.7rem + 2.8em);
 }
 
 #grid .labels li {
@@ -68,11 +68,38 @@ main {
 }
 
 #grid .body .day {
+    position: relative;
+    
     text-align: center;
-    font-weight: 600;
 
     height: unset;
     border: none;
+}
+
+#grid .body .day .name {
+    font-weight: 600;
+}
+
+#grid .body .week-button {
+    position: absolute;
+
+    width: 1em;
+
+    font-size: 1em;
+
+    background-color: transparent;
+    border: none;
+    outline: none;
+
+    cursor: pointer;
+}
+
+#grid .body .previous {
+    left: 0;   
+}
+
+#grid .body .next {
+    right: 0;
 }
 
 #grid .body .odd {
@@ -150,7 +177,7 @@ main {
 #lists .list {
     display: grid;
     grid-template-columns: auto auto auto auto;
-    gap: 0.2em;
+    gap: 0.4em;
 }
 
 #lists .list .hours {

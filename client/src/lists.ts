@@ -1,4 +1,4 @@
-import { weekDays, memberCount, dayCount, timeIncrementCount, groupNames, groupColors, groupAvailability, } from "./data";
+import { weekDayNames, memberCount, dayCount, timeIncrementCount, groupNames, groupColors, groupAvailability, } from "./data";
 
 const lists: HTMLUListElement = document.querySelector("#lists ul")!;
 
@@ -117,7 +117,7 @@ function listRender(members: number[], availabilityPeriods: number[]) {
         periodHours.className = "hours";
         periodHours.textContent = `${(timeIncrementEnd-timeIncrementStart) / 2}hr`;
         periodDay.className = "day";
-        periodDay.textContent = weekDays[day];
+        periodDay.textContent = weekDayNames[day];
         periodTimeStart.className = "start";
         periodTimeStart.textContent = formatTime(timeIncrementStart);
         periodTimeEnd.className = "end";
