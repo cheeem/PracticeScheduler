@@ -1,4 +1,4 @@
-import { weekDayNames, memberCount, dayCount, timeIncrementCount, groupNames, groupColors, groupAvailability, } from "./data";
+import { weekDayNames, memberCount, dayCount, timeIncrementCount, bandNames, bandColors, bandAvailability, } from "./data";
 
 const lists: HTMLUListElement = document.querySelector("#lists ul")!;
 
@@ -33,7 +33,7 @@ function listCompute(members: number[]) {
     for(let i = 0; i < members.length; i++) {
         const member: number = members[i];
         for(let day = 0; day < dayCount; day++) {
-            weekAvailability[day] &= groupAvailability[member * dayCount + day];
+            weekAvailability[day] &= bandAvailability[member * dayCount + day];
         }
     }
 
@@ -96,8 +96,8 @@ function listRender(members: number[], availabilityPeriods: number[]) {
         const memberColor: HTMLDivElement = document.createElement("div");
         const memberText: HTMLParagraphElement = document.createElement("p");
 
-        memberColor.style.backgroundColor = groupColors[m];
-        memberText.textContent = groupNames[m];
+        memberColor.style.backgroundColor = bandColors[m];
+        memberText.textContent = bandNames[m];
 
         member.appendChild(memberColor);
         member.appendChild(memberText);

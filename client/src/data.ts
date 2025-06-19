@@ -18,24 +18,24 @@ export const weekDayNames: string[] = [
 
 export let weekDayNumbers: number[] = Array.from({ length: weekDayNames.length }).map((_, day) => new Date(weekDateTime + day * 86400000).getDate() + 1);
 
-const groupAvailabilityJson: string | null = window.localStorage.getItem("groupAvailability");
-export let groupAvailability: number[] = groupAvailabilityJson !== null ? JSON.parse(groupAvailabilityJson) : new Array(memberCount * dayCount).fill(0);
-export let groupAvailabilityWeekIndex: number = 0;
-const groupAvailabilityWeeks: number[][] = [
-    groupAvailability, 
+const bandAvailabilityJson: string | null = window.localStorage.getItem("bandAvailability");
+export let bandAvailability: number[] = bandAvailabilityJson !== null ? JSON.parse(bandAvailabilityJson) : new Array(memberCount * dayCount).fill(0);
+export let bandAvailabilityWeekIndex: number = 0;
+const bandAvailabilityWeeks: number[][] = [
+    bandAvailability, 
     new Array(memberCount * dayCount).fill(0), 
     new Array(memberCount * dayCount).fill(0), 
     new Array(memberCount * dayCount).fill(0)
 ];
 
 export function weekNext() {
-    groupAvailabilityWeekIndex++;
+    bandAvailabilityWeekIndex++;
 
-    if(groupAvailabilityWeekIndex === groupAvailability.length) {
+    if(bandAvailabilityWeekIndex === bandAvailability.length) {
         console.log("fetch next, push")
     }
 
-    groupAvailability = groupAvailabilityWeeks[groupAvailabilityWeekIndex];
+    bandAvailability = bandAvailabilityWeeks[bandAvailabilityWeekIndex];
     //
     console.log(weekDayNumbers)
     weekDateTime += 604800000;
@@ -47,11 +47,11 @@ export function weekNext() {
 
 export function weekPrevious() {
 
-    if(groupAvailabilityWeekIndex === 0) {
+    if(bandAvailabilityWeekIndex === 0) {
         return;
     }
 
-    groupAvailability = groupAvailabilityWeeks[--groupAvailabilityWeekIndex];
+    bandAvailability = bandAvailabilityWeeks[--bandAvailabilityWeekIndex];
     //
     weekDateTime -= 604800000;
     weekDayNumbers = Array.from({ length: weekDayNames.length }).map((_, day) => new Date(weekDateTime + day * 86400000).getDate() + 1); 
@@ -59,7 +59,7 @@ export function weekPrevious() {
     gridRender();
 }
 
-export const groupNames: string[] = [
+export const bandNames: string[] = [
     "zoe",
     "silver",
     "lockett",
@@ -67,12 +67,12 @@ export const groupNames: string[] = [
     // "chuck",
 ];
 
-export const groupColors: string[] = 
+export const bandColors: string[] = 
     Array
         .from({ length: memberCount })
         .map((_: unknown, i: number) => `hsl(${(360 / memberCount) * i}, 100%, 50%)`);
 
-//console.log(groupColors)
+//console.log(bandColors)
 
 // [
 //     "red",
