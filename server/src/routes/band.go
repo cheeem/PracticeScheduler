@@ -1,7 +1,9 @@
 package routes
 
 import (
+	"context"
 	"database/sql"
+	"encoding/binary"
 	"io"
 	"log"
 	"net/http"
@@ -12,6 +14,7 @@ import (
 
 func BandNew(w http.ResponseWriter, r *http.Request) {
 
+	var ctx context.Context = r.Context()
 	var err error
 
 	var memberIdString string = r.PathValue("memberId")
@@ -31,32 +34,45 @@ func BandNew(w http.ResponseWriter, r *http.Request) {
 
 	var bandName string = string(bandNameBuf)
 
-	// TODO: create a transaction so we can roll back..?
+	var tx *sql.Tx
+	tx, err = utils.Db.BeginTx(ctx, nil)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	var query = `INSERT INTO bands (name) VALUES (?)`
 
 	var res sql.Result
-	res, err = utils.Db.Exec(query, bandName)
+	res, err = utils.Db.ExecContext(ctx, query, bandName)
 	log.Println("res:\t", res)
 	if err != nil {
+		_ = tx.Rollback()
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
 	var bandId int64
 	bandId, err = res.LastInsertId()
-
 	if err != nil {
+		_ = tx.Rollback()
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	query = `INSERT INTO band_members (band_id, member_id) VALUES (?, ?)`
 
-	res, err = utils.Db.Exec(query, bandId, memberId)
+	res, err = utils.Db.ExecContext(ctx, query, bandId, memberId)
 	log.Println("res:\t", res)
 	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
+		_ = tx.Rollback()
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -66,11 +82,12 @@ func BandNew(w http.ResponseWriter, r *http.Request) {
 //
 //	byte memberCount
 //	[]memberName members
-//		uint32 id !!!!!!!!!!!!!!!!!!!!!!!!!!
+//		uint32 id
 //		byte len
 //		byte[] name
-func BandMembersGet(w http.ResponseWriter, r *http.Request) { // TODO: add member ids
+func BandMembersGet(w http.ResponseWriter, r *http.Request) {
 
+	var ctx context.Context = r.Context()
 	var err error
 
 	var bandIdString string = r.PathValue("bandId")
@@ -81,31 +98,33 @@ func BandMembersGet(w http.ResponseWriter, r *http.Request) { // TODO: add membe
 		return
 	}
 
-	var rows *sql.Rows
 	var query string = `
-		SELECT members.name 
+		SELECT members.id, members.name 
 		FROM band_members 
 		INNER JOIN members ON members.id = band_members.member_id
 		WHERE band_members.band_id = ? 
 		ORDER BY members.id 
 	`
 
-	rows, err = utils.Db.Query(query, bandId)
+	var rows *sql.Rows
+	rows, err = utils.Db.QueryContext(ctx, query, bandId)
 	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	defer rows.Close()
 
-	var buf []byte = make([]byte, 0, 256) // add checks to see if nextByte exceeds 256 and resize??
+	// TODO: add checks to see if nextByte exceeds 256 and resize??
+	var buf []byte = make([]byte, 0, 256)
 	var nextByte int = 1
 	var memberCount byte = 0
+	var memberId uint32
 	var memberName sql.RawBytes
 
 	for rows.Next() {
 
-		err := rows.Scan(&memberName)
+		err := rows.Scan(&memberId, &memberName)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -113,6 +132,9 @@ func BandMembersGet(w http.ResponseWriter, r *http.Request) { // TODO: add membe
 		}
 
 		var memberNameLen int = len(memberName)
+
+		binary.BigEndian.PutUint32(buf[nextByte:], memberId)
+		nextByte += 4
 
 		buf[nextByte] = byte(memberNameLen)
 		nextByte++
@@ -147,6 +169,7 @@ func BandMembersGet(w http.ResponseWriter, r *http.Request) { // TODO: add membe
 
 func BandMembersAdd(w http.ResponseWriter, r *http.Request) {
 
+	var ctx context.Context = r.Context()
 	var err error
 
 	var bandIdString string = r.PathValue("bandId")
@@ -165,13 +188,11 @@ func BandMembersAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var query string = `
-		INSERT INTO band_members (band_id, member_id) VALUES (?, ?)
-	`
+	var query string = `INSERT INTO band_members (band_id, member_id) VALUES (?, ?)`
 
-	_, err = utils.Db.Exec(query, bandId, memberId)
+	_, err = utils.Db.ExecContext(ctx, query, bandId, memberId)
 	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -179,6 +200,7 @@ func BandMembersAdd(w http.ResponseWriter, r *http.Request) {
 
 func BandMembersRemove(w http.ResponseWriter, r *http.Request) {
 
+	var ctx context.Context = r.Context()
 	var err error
 
 	var bandIdString string = r.PathValue("bandId")
@@ -203,15 +225,17 @@ func BandMembersRemove(w http.ResponseWriter, r *http.Request) {
 		AND member_id = ? 
 	`
 
-	_, err = utils.Db.Exec(query, bandId, memberId)
+	_, err = utils.Db.ExecContext(ctx, query, bandId, memberId)
 	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 }
 
 func BandNameSet(w http.ResponseWriter, r *http.Request) {
+
+	var ctx context.Context = r.Context()
 
 	var err error
 
@@ -238,7 +262,7 @@ func BandNameSet(w http.ResponseWriter, r *http.Request) {
 		WHERE id = ? 
 	`
 
-	_, err = utils.Db.Exec(query, bandName, bandId)
+	_, err = utils.Db.ExecContext(ctx, query, bandName, bandId)
 	if err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return

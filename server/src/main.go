@@ -22,31 +22,6 @@ import (
 
 func main() {
 
-	// TODO: convert all joins to inner joins..?
-	// TODO: switch all queries to use ctx from r.Context() through
-	// 		QueryContext(ctx, query, ...params)
-	// 		QueryRowContext(ctx, query, ...params)
-	//		ExecContext(ctx, query, ...params)
-
-	// func runInTx(db *sql.DB, fn func(tx *sql.Tx) error) error {
-	// 	tx, err := db.Begin()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	err = fn(tx)
-	// 	if err == nil {
-	// 		return tx.Commit()
-	// 	}
-
-	// 	rollbackErr := tx.Rollback()
-	// 	if rollbackErr != nil {
-	// 		return errors.Join(err, rollbackErr)
-	// 	}
-
-	// 	return err
-	// }
-
 	var err error
 	err = utils.EnvSet()
 	if err != nil {
@@ -74,7 +49,7 @@ func main() {
 	mux.HandleFunc("GET /member/id/get/{memberName}", routes.MemberIdGet)
 	mux.HandleFunc("GET /member/bands/get/{memberId}", routes.MemberBandsGet)
 	mux.HandleFunc("PATCH /member/name/set/{memberId}", routes.MemberNameSet)
-	// TODO: mux.HandleFunc("DELETE /member/bands/leave/{memberId}/{bandId}", )
+	mux.HandleFunc("DELETE /member/bands/leave/{memberId}/{bandId}", routes.MemberBandLeave)
 	// week
 	mux.HandleFunc("GET /week/get/{bandId}/", routes.WeekGet)
 	mux.HandleFunc("GET /week/get/{bandId}/{offset}", routes.WeekGet)

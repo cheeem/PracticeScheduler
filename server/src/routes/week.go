@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"context"
 	"database/sql"
 	"encoding/binary"
 	"log"
@@ -12,17 +13,18 @@ import (
 	"github.com/cheeem/practicescheduler/utils"
 )
 
-func WeekNew(bandId int, week int, year int) (byte, error) {
+func WeekNew(ctx context.Context, bandId int, week int, year int) (byte, error) {
 
 	var err error
 	var rows *sql.Rows
 
-	rows, err = utils.Db.Query(`
+	var query string = `
 		SELECT member_id  
 		FROM band_members  
 		WHERE band_id = ?
-	`, bandId)
+	`
 
+	rows, err = utils.Db.QueryContext(ctx, query, bandId)
 	if err != nil {
 		return 0, err
 	}
@@ -47,7 +49,6 @@ func WeekNew(bandId int, week int, year int) (byte, error) {
 	}
 
 	err = rows.Err()
-
 	if err != nil {
 		return 0, err
 	}
@@ -57,39 +58,35 @@ func WeekNew(bandId int, week int, year int) (byte, error) {
 	}
 
 	// !!! we might be able to benefit performance from prepared statements
-	var query strings.Builder
+	var queryBuilder strings.Builder
 	var bandIds []int = make([]int, memberCount)
 
-	query.WriteString("INSERT INTO availability (band_id, member_id, week, year) VALUES (?,")
-	//query.WriteString(strconv.Itoa(bandId))
-	// query.WriteByte('?')
-	// query.WriteByte(',')
-	query.WriteString(strconv.Itoa(memberIds[0]))
-	query.WriteByte(',')
-	query.WriteString(strconv.Itoa(week))
-	query.WriteByte(',')
-	query.WriteString(strconv.Itoa(year))
-	query.WriteByte(')')
+	queryBuilder.WriteString("INSERT INTO availability (band_id, member_id, week, year) VALUES (?,")
+	//queryBuilder.WriteString(strconv.Itoa(bandId))
+	// queryBuilder.WriteByte('?')
+	// queryBuilder.WriteByte(',')
+	queryBuilder.WriteString(strconv.Itoa(memberIds[0]))
+	queryBuilder.WriteByte(',')
+	queryBuilder.WriteString(strconv.Itoa(week))
+	queryBuilder.WriteByte(',')
+	queryBuilder.WriteString(strconv.Itoa(year))
+	queryBuilder.WriteByte(')')
 	bandIds[0] = bandId
 
 	for i := byte(1); i < memberCount; i++ {
-		query.WriteString(",(?,")
-		// query.WriteString(strconv.Itoa(bandId))
-		// query.WriteByte(',')
-		query.WriteString(strconv.Itoa(memberIds[i]))
-		query.WriteByte(',')
-		query.WriteString(strconv.Itoa(week))
-		query.WriteByte(',')
-		query.WriteString(strconv.Itoa(year))
-		query.WriteByte(')')
+		queryBuilder.WriteString(",(?,")
+		// queryBuilder.WriteString(strconv.Itoa(bandId))
+		// queryBuilder.WriteByte(',')
+		queryBuilder.WriteString(strconv.Itoa(memberIds[i]))
+		queryBuilder.WriteByte(',')
+		queryBuilder.WriteString(strconv.Itoa(week))
+		queryBuilder.WriteByte(',')
+		queryBuilder.WriteString(strconv.Itoa(year))
+		queryBuilder.WriteByte(')')
 		bandIds[i] = bandId
 	}
 
-	var res sql.Result
-	res, err = utils.Db.Exec(query.String(), bandIds)
-
-	log.Println("res:\t", res)
-
+	_, err = utils.Db.ExecContext(ctx, queryBuilder.String(), bandIds)
 	if err != nil {
 		return 0, err
 	}
@@ -97,9 +94,6 @@ func WeekNew(bandId int, week int, year int) (byte, error) {
 	return memberCount, nil
 
 }
-
-// TODO: members can edit by passing in their member id obtained through inputting their name on the login screen
-// (cached in local storage / cookies if the user doesn't go to login screen again)
 
 // format:
 //
@@ -110,6 +104,7 @@ func WeekNew(bandId int, week int, year int) (byte, error) {
 //	[7*memberCount]uint32 availability
 func WeekGet(w http.ResponseWriter, r *http.Request) {
 
+	var ctx context.Context = r.Context()
 	var err error
 
 	var bandIdString string = r.PathValue("bandId")
@@ -156,8 +151,7 @@ func WeekGet(w http.ResponseWriter, r *http.Request) {
 		ORDER BY member_id
 	`
 
-	rows, err := utils.Db.Query(query, bandId, week, year)
-
+	rows, err := utils.Db.QueryContext(ctx, query, bandId, week, year)
 	if err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
@@ -220,7 +214,7 @@ func WeekGet(w http.ResponseWriter, r *http.Request) {
 	var weekDoesNotExist bool = memberCount == 0
 	if weekDoesNotExist {
 
-		memberCount, err = WeekNew(bandId, week, year)
+		memberCount, err = WeekNew(ctx, bandId, week, year)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -252,9 +246,7 @@ func WeekGet(w http.ResponseWriter, r *http.Request) {
 
 	var n int
 	n, err = w.Write(body)
-
 	log.Println(n, "bytes written")
-
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -264,6 +256,7 @@ func WeekGet(w http.ResponseWriter, r *http.Request) {
 
 func WeekSet(w http.ResponseWriter, r *http.Request) {
 
+	var ctx context.Context = r.Context()
 	var err error
 
 	var bandIdString string = r.PathValue("bandId")
@@ -299,16 +292,10 @@ func WeekSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var availability [7]uint32
-	var buf []byte = make([]byte, 4*7)
+	var buf [28]byte
 	var n int
-	n, err = r.Body.Read(buf) // TODO: change to readfull..?
-
-	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
-
-	if n != 4*7 {
+	n, err = r.Body.Read(buf[:]) // TODO: change to readfull..?
+	if err != nil || n != 4*7 {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
@@ -336,25 +323,16 @@ func WeekSet(w http.ResponseWriter, r *http.Request) {
 			year = ? 
 	`
 
-	var res sql.Result
-	res, err = utils.Db.Exec(query,
-		availability[0],
-		availability[1],
-		availability[2],
-		availability[3],
-		availability[4],
-		availability[5],
-		availability[6],
+	_, err = utils.Db.ExecContext(ctx, query,
+		availability,
 		bandId,
 		memberId,
 		week,
 		year,
 	)
 
-	log.Println("res:\t", res)
-
 	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
