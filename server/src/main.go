@@ -21,8 +21,33 @@ import (
 //			u32[7 * memberCount] bandAvailability
 
 func main() {
-	var err error
 
+	// TODO: convert all joins to inner joins..?
+	// TODO: switch all queries to use ctx from r.Context() through
+	// 		QueryContext(ctx, query, ...params)
+	// 		QueryRowContext(ctx, query, ...params)
+	//		ExecContext(ctx, query, ...params)
+
+	// func runInTx(db *sql.DB, fn func(tx *sql.Tx) error) error {
+	// 	tx, err := db.Begin()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	err = fn(tx)
+	// 	if err == nil {
+	// 		return tx.Commit()
+	// 	}
+
+	// 	rollbackErr := tx.Rollback()
+	// 	if rollbackErr != nil {
+	// 		return errors.Join(err, rollbackErr)
+	// 	}
+
+	// 	return err
+	// }
+
+	var err error
 	err = utils.EnvSet()
 	if err != nil {
 		log.Fatal(err)
@@ -37,9 +62,35 @@ func main() {
 
 	var client http.Handler = http.FileServer(http.Dir(utils.Env.ClientPath))
 
+	// root
 	mux.Handle("GET /", client)
-	mux.HandleFunc("GET /band/{name}", routes.BandGet)
+	// band
+	mux.HandleFunc("POST /band/new/{memberId}", routes.BandNew)
+	mux.HandleFunc("GET /band/members/get/{bandId}", routes.BandMembersGet)
+	mux.HandleFunc("POST /band/members/add/{bandId}/{memberId}", routes.BandMembersAdd)         // TODO: maybe pass memberId in the body
+	mux.HandleFunc("DELETE /band/members/remove/{bandId}/{memberId}", routes.BandMembersRemove) // TODO: maybe pass memberId in the body
+	// member
+	mux.HandleFunc("POST /member/new", routes.MemberNew)
+	mux.HandleFunc("GET /member/id/get/{memberName}", routes.MemberIdGet)
+	mux.HandleFunc("GET /member/bands/get/{memberId}", routes.MemberBandsGet)
+	mux.HandleFunc("PATCH /member/name/set/{memberId}", routes.MemberNameSet)
+	// TODO: mux.HandleFunc("DELETE /member/bands/leave/{memberId}/{bandId}", )
+	// week
+	mux.HandleFunc("GET /week/get/{bandId}/", routes.WeekGet)
+	mux.HandleFunc("GET /week/get/{bandId}/{offset}", routes.WeekGet)
+	mux.HandleFunc("PATCH /week/set/{bandId}/{memberId}/{week}/{year}", routes.WeekSet)
 
 	log.Println("Server listening on :8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
+
+// func stripTrailingSlashMiddleware(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		if r.URL.Path != "/" && strings.HasSuffix(r.URL.Path, "/") {
+// 			// Redirect to the same path without the trailing slash
+// 			http.Redirect(w, r, strings.TrimSuffix(r.URL.Path, "/"), http.StatusMovedPermanently)
+// 			return
+// 		}
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
