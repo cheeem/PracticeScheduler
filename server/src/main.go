@@ -42,8 +42,8 @@ func main() {
 	// band
 	mux.HandleFunc("POST /band/new/{memberId}", routes.BandNew)
 	mux.HandleFunc("GET /band/members/get/{bandId}", routes.BandMembersGet)
-	mux.HandleFunc("POST /band/members/add/{bandId}/{memberId}", routes.BandMembersAdd)         // TODO: maybe pass memberId in the body
-	mux.HandleFunc("DELETE /band/members/remove/{bandId}/{memberId}", routes.BandMembersRemove) // TODO: maybe pass memberId in the body
+	mux.HandleFunc("POST /band/members/add/{bandId}/{memberId}", routes.BandMembersAdd)
+	mux.HandleFunc("DELETE /band/members/remove/{bandId}/{memberId}", routes.BandMembersRemove)
 	// member
 	mux.HandleFunc("POST /member/new", routes.MemberNew)
 	mux.HandleFunc("GET /member/id/get/{memberName}", routes.MemberIdGet)

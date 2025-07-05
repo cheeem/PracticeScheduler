@@ -30,7 +30,20 @@ func MemberNew(w http.ResponseWriter, r *http.Request) {
 
 	var memberName string = string(buf)
 
-	var query string = `INSERT INTO (name) VALUES (?)`
+	var query string = `SELECT COUNT(1) FROM members WHERE name = ?`
+
+	var memberNameExists bool
+	err = utils.Db.QueryRowContext(ctx, query, memberName).Scan(&memberNameExists)
+	if err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+	if memberNameExists {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	query = `INSERT INTO (name) VALUES (?)`
 
 	_, err = utils.Db.ExecContext(ctx, query, memberName)
 

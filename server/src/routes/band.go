@@ -34,6 +34,15 @@ func BandNew(w http.ResponseWriter, r *http.Request) {
 
 	var bandName string = string(bandNameBuf)
 
+	var query string = `SELECT COUNT(1) FROM bands WHERE name = ?`
+
+	var bandNameExists bool
+	err = utils.Db.QueryRowContext(ctx, query, bandName).Scan(&bandNameExists)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	var tx *sql.Tx
 	tx, err = utils.Db.BeginTx(ctx, nil)
 	if err != nil {
@@ -41,7 +50,7 @@ func BandNew(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var query = `INSERT INTO bands (name) VALUES (?)`
+	query = `INSERT INTO bands (name) VALUES (?)`
 
 	var res sql.Result
 	res, err = utils.Db.ExecContext(ctx, query, bandName)
