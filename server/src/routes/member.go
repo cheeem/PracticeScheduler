@@ -62,7 +62,7 @@ func MemberIdGet(w http.ResponseWriter, r *http.Request) {
 	var ctx context.Context = r.Context()
 	var err error
 
-	var memberName string = r.PathValue("memberId")
+	var memberName string = r.PathValue("memberName")
 
 	var memberId uint32
 
