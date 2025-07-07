@@ -1,10 +1,9 @@
 import { gridRender } from "./grid";
 
+const decoder: TextDecoder = new TextDecoder('utf-8');
+
 export const timeIncrementCount: number = 32;
 export const dayCount: number = 7;
-export const memberCount: number = 4;
-
-export let weekDateTime: number = new Date("2025-06-16").getTime();
 
 export const weekDayNames: string[] = [
     "Monday",
@@ -16,61 +15,27 @@ export const weekDayNames: string[] = [
     "Sunday",
 ];
 
-export let weekDayNumbers: number[] = Array.from({ length: weekDayNames.length }).map((_, day) => new Date(weekDateTime + day * 86400000).getDate() + 1);
+//
+const bandId: number = 1;
+const memberId: number = 2;
+//
 
-const bandAvailabilityJson: string | null = window.localStorage.getItem("bandAvailability");
-export let bandAvailability: number[] = bandAvailabilityJson !== null ? JSON.parse(bandAvailabilityJson) : new Array(memberCount * dayCount).fill(0);
-export let bandAvailabilityWeekIndex: number = 0;
-const bandAvailabilityWeeks: number[][] = [
-    bandAvailability, 
-    new Array(memberCount * dayCount).fill(0), 
-    new Array(memberCount * dayCount).fill(0), 
-    new Array(memberCount * dayCount).fill(0)
-];
+const bandAvailabilityWeeks: Uint32Array[] = [];
+const weekDayNumberWeeks: Uint8Array[] = [];
+const weekYearWeeks: number[] = []; // flattened
 
-export function weekNext() {
-    bandAvailabilityWeekIndex++;
+let bandAvailabilityWeekIndex: number = 0;
+let week: number;
+let year: number;
 
-    if(bandAvailabilityWeekIndex === bandAvailability.length) {
-        console.log("fetch next, push")
-    }
+export let memberCount: number = 0;
+export let bandAvailability: Uint32Array;
+export let weekDayNumbers: Uint8Array;
+export let member: number;
 
-    bandAvailability = bandAvailabilityWeeks[bandAvailabilityWeekIndex];
-    //
-    console.log(weekDayNumbers)
-    weekDateTime += 604800000;
-    weekDayNumbers = Array.from({ length: weekDayNames.length }).map((_, day) => new Date(weekDateTime + day * 86400000).getDate()); 
-    console.log(weekDateTime, weekDayNumbers)
-    //
-    gridRender();
-}
-
-export function weekPrevious() {
-
-    if(bandAvailabilityWeekIndex === 0) {
-        return;
-    }
-
-    bandAvailability = bandAvailabilityWeeks[--bandAvailabilityWeekIndex];
-    //
-    weekDateTime -= 604800000;
-    weekDayNumbers = Array.from({ length: weekDayNames.length }).map((_, day) => new Date(weekDateTime + day * 86400000).getDate() + 1); 
-    //
-    gridRender();
-}
-
-export const bandNames: string[] = [
-    "zoe",
-    "silver",
-    "lockett",
-    "lili",
-    // "chuck",
-];
-
-export const bandColors: string[] = 
-    Array
-        .from({ length: memberCount })
-        .map((_: unknown, i: number) => `hsl(${(360 / memberCount) * i}, 100%, 50%)`);
+export const bandMemberNames: string[] = [];
+export const bandMemberIds: number[] = [];
+export const bandMemberColors: string[] = [];
 
 //console.log(bandColors)
 
@@ -81,3 +46,100 @@ export const bandColors: string[] =
 //     "yellow",
 // ];
 
+export function weekNext() {
+    bandAvailabilityWeekIndex++;
+
+    if(bandAvailabilityWeekIndex === bandAvailabilityWeeks.length) {
+        weekGet(bandAvailabilityWeekIndex).then(gridRender)
+        return;
+    }
+
+    bandAvailability = bandAvailabilityWeeks[bandAvailabilityWeekIndex];
+    weekDayNumbers = weekDayNumberWeeks[bandAvailabilityWeekIndex];
+    week = weekYearWeeks[bandAvailabilityWeekIndex];
+    year = weekYearWeeks[bandAvailabilityWeekIndex+1];
+    gridRender();
+}
+
+export function weekPrevious() {
+    if(bandAvailabilityWeekIndex === 0) {
+        return;
+    }
+
+    bandAvailabilityWeekIndex--;
+
+    bandAvailability = bandAvailabilityWeeks[bandAvailabilityWeekIndex];
+    weekDayNumbers = weekDayNumberWeeks[bandAvailabilityWeekIndex];
+    week = weekYearWeeks[bandAvailabilityWeekIndex];
+    year = weekYearWeeks[bandAvailabilityWeekIndex+1];
+    gridRender();
+}
+
+function GenerateBandColors() {
+    for(let m = 0; m < memberCount; m++) {
+        bandMemberColors[m] = `hsl(${(360 / memberCount) * m}, 100%, 50%)`
+    }
+    bandMemberColors.length = memberCount;
+}
+
+export async function bandMembersGet() {
+    return fetch(`http://localhost:8080/band/members/get/${bandId}`)
+        .then((res: Response) => res 
+        .arrayBuffer()
+        .then(bandMemberRead));
+}
+
+function bandMemberRead(buf: ArrayBuffer) {
+    const view: DataView = new DataView(buf);
+    memberCount = view.getUint8(0);
+    GenerateBandColors();
+    
+    let nextByte = 1;
+    for(let m = 0; m < memberCount; m++) {
+        const id: number = view.getUint32(nextByte, true);
+        const len: number = view.getUint8(nextByte+4);
+        const name = decoder.decode(new Uint8Array(buf).subarray(nextByte+5, nextByte+5+len));
+        
+        bandMemberIds[m] = id
+        bandMemberNames[m] = name;
+        nextByte += 5+len
+
+        if(memberId === id) {
+            member = m;
+        }
+    }
+
+    bandMemberIds.length = memberCount;
+    bandMemberNames.length = memberCount;
+}
+
+export async function weekGet(offset: number) {
+    return fetch(`http://localhost:8080/week/get/${bandId}/${offset}`)
+        .then((res: Response) => res
+        .arrayBuffer()
+        .then(weekRead));
+}
+
+function weekRead(buf: ArrayBuffer) {
+    const view: DataView = new DataView(buf);
+    week = view.getUint8(0);
+    year = view.getInt16(1, true);
+    memberCount = view.getUint8(3);
+    // GenerateBandColors();
+
+    weekDayNumbers = new Uint8Array(buf, 4, 7);
+    bandAvailability = new Uint32Array(buf, 12);
+
+    weekYearWeeks[bandAvailabilityWeekIndex * 2] = week;
+    weekYearWeeks[bandAvailabilityWeekIndex * 2 + 1] = year;
+    weekDayNumberWeeks[bandAvailabilityWeekIndex] = weekDayNumbers
+    bandAvailabilityWeeks[bandAvailabilityWeekIndex] = bandAvailability
+}
+
+export async function weekSet() {
+    return fetch(`http://localhost:8080/week/set/${bandId}/${memberId}/${week}/${year}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/octet-stream" },
+        body: new Uint8Array(bandAvailability.buffer, 12 + member * dayCount * 4, dayCount * 4)
+    });
+}

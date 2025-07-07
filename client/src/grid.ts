@@ -1,10 +1,21 @@
-import { weekDayNames, weekDayNumbers, memberCount, dayCount, timeIncrementCount, bandAvailability, bandColors, bandNames, weekNext, weekPrevious } from "./data.ts";
+import { 
+    weekDayNames, 
+    weekDayNumbers, 
+    memberCount, 
+    dayCount, 
+    timeIncrementCount, 
+    bandAvailability, 
+    bandMemberColors, 
+    bandMemberNames, 
+    weekNext, 
+    weekPrevious, 
+    weekSet,
+    member,
+} from "./data.ts";
 import listsRender from "./lists.ts";
 
-const bandGridElements: HTMLDivElement[] = new Array(memberCount * dayCount * timeIncrementCount);
-const weekDayNumberElements: HTMLParagraphElement[] = new Array(dayCount);
-
-let member: number = 2;
+let bandGridElements: HTMLDivElement[];
+let weekDayNumberElements: HTMLParagraphElement[];
 
 let notEditing: boolean = true;
 let rightClickEdit: boolean = false;
@@ -22,6 +33,9 @@ function documentMouseUp() {
 }
 
 export default function gridInitialize() {
+
+    bandGridElements = new Array(memberCount * dayCount * timeIncrementCount);
+    weekDayNumberElements = new Array(dayCount);
 
     const grid: HTMLUListElement = document.querySelector("#grid .body")!;
     const labels: HTMLUListElement = document.querySelector("#grid .labels")!;
@@ -67,7 +81,7 @@ export default function gridInitialize() {
                 const marker = document.createElement("div");
                 const available: number = bandAvailability[m * dayCount + day] & (1 << timeIncrement);
 
-                marker.style.backgroundColor = available ? bandColors[m] : "lightgrey";
+                marker.style.backgroundColor = available ? bandMemberColors[m] : "lightgrey";
 
                 bandGridElements[(m * dayCount + day) * timeIncrementCount + timeIncrement] = marker;
                 node.appendChild(marker);
@@ -100,7 +114,7 @@ export function gridRender() {
                 const marker: HTMLDivElement = bandGridElements[(m * dayCount + d) * timeIncrementCount + i];
                 const available: number = bandAvailability[m * dayCount + d] & (1 << i);
 
-                marker.style.backgroundColor = available ? bandColors[m] : "lightgrey";
+                marker.style.backgroundColor = available ? bandMemberColors[m] : "lightgrey";
                 // if(member !== m) {
                 //     marker.style.opacity = "0.2";
                 // }
@@ -112,10 +126,6 @@ export function gridRender() {
 
 }
 
-function gridSave() {
-    window.localStorage.setItem("bandAvailability", JSON.stringify(bandAvailability));
-}
-
 function gridMouseDown(day: number, timeIncrement: number) {
 
     if(rightClickEdit) {
@@ -125,7 +135,7 @@ function gridMouseDown(day: number, timeIncrement: number) {
     bandAvailability[member * dayCount + day] ^= (1 << timeIncrement);
                 
     const available: number = (bandAvailability[member * dayCount + day] >>> timeIncrement) & 1;
-    bandGridElements[(member * dayCount + day) * timeIncrementCount + timeIncrement].style.backgroundColor = available ? bandColors[member] : "lightgrey";
+    bandGridElements[(member * dayCount + day) * timeIncrementCount + timeIncrement].style.backgroundColor = available ? bandMemberColors[member] : "lightgrey";
 
     notEditing = false;
     availableStart = available;
@@ -136,7 +146,7 @@ function gridMouseDown(day: number, timeIncrement: number) {
     dayPrevious = null;
     timeIncrementPrevious = null;
 
-    gridSave();
+    weekSet();
     listsRender();
 }
 
@@ -194,7 +204,7 @@ function gridMouseOver(day: number, timeIncrement: number) {
         if(availableStart) {
             bandAvailability[member * dayCount + d] |= mask;
             for(let i = timeIncrementMin; i <= timeIncrementMax; i++) {
-                bandGridElements[(member * dayCount + d) * timeIncrementCount + i].style.backgroundColor = bandColors[member];
+                bandGridElements[(member * dayCount + d) * timeIncrementCount + i].style.backgroundColor = bandMemberColors[member];
             }
         } else {
             bandAvailability[member * dayCount + d] &= ~mask;
@@ -207,7 +217,7 @@ function gridMouseOver(day: number, timeIncrement: number) {
     timeIncrementPrevious = timeIncrement;
     dayPrevious = day;
 
-    gridSave();
+    weekSet();
     listsRender();
 }
 
@@ -264,29 +274,29 @@ function legendInitialize() {
     const legend: HTMLUListElement = document.querySelector("#grid .legend ul")!;
     
     //
-    const legendKeyTexts: HTMLParagraphElement[] = [];
+    // const legendKeyTexts: HTMLParagraphElement[] = [];
     //
 
-    for(let m = 0; m < bandNames.length; m++) {
+    for(let m = 0; m < bandMemberNames.length; m++) {
 
         const legendKey: HTMLLIElement = document.createElement("li");
         const legendKeyColor: HTMLDivElement = document.createElement("div");
         const legendKeyText: HTMLParagraphElement = document.createElement("p");
 
-        legendKeyColor.style.backgroundColor = bandColors[m];
-        legendKeyText.textContent = bandNames[m];
+        legendKeyColor.style.backgroundColor = bandMemberColors[m];
+        legendKeyText.textContent = bandMemberNames[m];
 
-        //
         if(member === m) {
             legendKeyText.style.textDecoration = "underline";
         }
-        legendKeyTexts.push(legendKeyText)
-        legendKey.addEventListener("click", () => {
-            legendKeyTexts.forEach(e => e.style.textDecoration = "none");
-            legendKeyText.style.textDecoration = "underline";
-            member = m;
-            gridRender();
-        });
+        //
+        // legendKeyTexts.push(legendKeyText)
+        // legendKey.addEventListener("click", () => {
+        //     legendKeyTexts.forEach(e => e.style.textDecoration = "none");
+        //     legendKeyText.style.textDecoration = "underline";
+        //     member = m;
+        //     gridRender();
+        // });
         //
 
         legendKey.appendChild(legendKeyColor);

@@ -84,7 +84,7 @@ func MemberIdGet(w http.ResponseWriter, r *http.Request) {
 	// TODO: check if using a base array and creating slice views from it is an anti-pattern
 	var buf [4]byte
 
-	binary.BigEndian.PutUint32(buf[:], memberId)
+	binary.LittleEndian.PutUint32(buf[:], memberId)
 
 	var n int
 	n, err = w.Write(buf[:])
@@ -134,7 +134,8 @@ func MemberBandsGet(w http.ResponseWriter, r *http.Request) {
 
 	defer rows.Close()
 
-	var buf []byte = make([]byte, 0, 256) // add checks to see if nextByte exceeds 256 and resize??
+	// TODO: add checks to see if nextByte exceeds 256 and resize??
+	var buf []byte = make([]byte, 256)
 	var nextByte int = 1
 	var bandCount byte = 0
 	var bandId uint32
@@ -151,7 +152,7 @@ func MemberBandsGet(w http.ResponseWriter, r *http.Request) {
 
 		var memberNameLen int = len(bandName)
 
-		binary.BigEndian.PutUint32(buf[nextByte:], bandId)
+		binary.LittleEndian.PutUint32(buf[nextByte:], bandId)
 		nextByte += 4
 
 		buf[nextByte] = byte(memberNameLen)

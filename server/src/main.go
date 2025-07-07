@@ -51,8 +51,8 @@ func main() {
 	mux.HandleFunc("PATCH /member/name/set/{memberId}", routes.MemberNameSet)
 	mux.HandleFunc("DELETE /member/bands/leave/{memberId}/{bandId}", routes.MemberBandLeave)
 	// week
-	mux.HandleFunc("GET /week/get/{bandId}/", routes.WeekGet)
-	mux.HandleFunc("GET /week/get/{bandId}/{offset}", routes.WeekGet)
+	mux.HandleFunc("GET /week/get/{bandId}/", routes.WeekGet)         // TODO: add month for UI
+	mux.HandleFunc("GET /week/get/{bandId}/{offset}", routes.WeekGet) // TODO: add month for UI
 	mux.HandleFunc("PATCH /week/set/{bandId}/{memberId}/{week}/{year}", routes.WeekSet)
 
 	log.Println("Server listening on :8080")

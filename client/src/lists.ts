@@ -1,4 +1,4 @@
-import { weekDayNames, memberCount, dayCount, timeIncrementCount, bandNames, bandColors, bandAvailability, } from "./data";
+import { weekDayNames, memberCount, dayCount, timeIncrementCount, bandMemberNames, bandMemberColors, bandAvailability, } from "./data";
 
 const lists: HTMLUListElement = document.querySelector("#lists ul")!;
 
@@ -96,8 +96,8 @@ function listRender(members: number[], availabilityPeriods: number[]) {
         const memberColor: HTMLDivElement = document.createElement("div");
         const memberText: HTMLParagraphElement = document.createElement("p");
 
-        memberColor.style.backgroundColor = bandColors[m];
-        memberText.textContent = bandNames[m];
+        memberColor.style.backgroundColor = bandMemberColors[m];
+        memberText.textContent = bandMemberNames[m];
 
         member.appendChild(memberColor);
         member.appendChild(memberText);

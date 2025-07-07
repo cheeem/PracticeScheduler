@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/binary"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -59,7 +60,7 @@ func WeekNew(ctx context.Context, bandId int, week int, year int) (byte, error) 
 
 	// !!! we might be able to benefit performance from prepared statements
 	var queryBuilder strings.Builder
-	var bandIds []int = make([]int, memberCount)
+	var bandIds []any = make([]any, memberCount)
 
 	queryBuilder.WriteString("INSERT INTO availability (band_id, member_id, week, year) VALUES (?,")
 	//queryBuilder.WriteString(strconv.Itoa(bandId))
@@ -86,7 +87,7 @@ func WeekNew(ctx context.Context, bandId int, week int, year int) (byte, error) 
 		bandIds[i] = bandId
 	}
 
-	_, err = utils.Db.ExecContext(ctx, queryBuilder.String(), bandIds)
+	_, err = utils.Db.ExecContext(ctx, queryBuilder.String(), bandIds...)
 	if err != nil {
 		return 0, err
 	}
@@ -159,14 +160,16 @@ func WeekGet(w http.ResponseWriter, r *http.Request) {
 
 	defer rows.Close()
 
-	var buf []byte = make([]byte, 0, 256) // add checks to see if nextByte exceeds 256 and resize??
+	var buf []byte = make([]byte, 256) // add checks to see if nextByte exceeds 256 and resize??
 	var nextByte int = 4
 
-	for nextByte < 7 {
-		dt = dt.AddDate(0, 0, nextByte)
+	for range 7 {
+		dt = dt.AddDate(0, 0, 1)
 		buf[nextByte] = byte(dt.Day())
 		nextByte++
 	}
+
+	nextByte++ // increment to align to 4 bytes
 
 	var memberCount byte
 	var day0 uint32
@@ -186,19 +189,19 @@ func WeekGet(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		binary.BigEndian.PutUint32(buf[nextByte:], day0)
+		binary.LittleEndian.PutUint32(buf[nextByte:], day0)
 		nextByte += 4
-		binary.BigEndian.PutUint32(buf[nextByte:], day1)
+		binary.LittleEndian.PutUint32(buf[nextByte:], day1)
 		nextByte += 4
-		binary.BigEndian.PutUint32(buf[nextByte:], day2)
+		binary.LittleEndian.PutUint32(buf[nextByte:], day2)
 		nextByte += 4
-		binary.BigEndian.PutUint32(buf[nextByte:], day3)
+		binary.LittleEndian.PutUint32(buf[nextByte:], day3)
 		nextByte += 4
-		binary.BigEndian.PutUint32(buf[nextByte:], day4)
+		binary.LittleEndian.PutUint32(buf[nextByte:], day4)
 		nextByte += 4
-		binary.BigEndian.PutUint32(buf[nextByte:], day5)
+		binary.LittleEndian.PutUint32(buf[nextByte:], day5)
 		nextByte += 4
-		binary.BigEndian.PutUint32(buf[nextByte:], day6)
+		binary.LittleEndian.PutUint32(buf[nextByte:], day6)
 		nextByte += 4
 
 		memberCount++
@@ -229,7 +232,7 @@ func WeekGet(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var availabilityBytes int = 7 * 4 * int(memberCount)
-		for nextByte < availabilityBytes {
+		for range availabilityBytes {
 			// TODO: might be able to optimize by setting bytes to integers instead so we spend less time jumping and looping
 			buf[nextByte] = 0
 			nextByte++
@@ -237,7 +240,7 @@ func WeekGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	buf[0] = byte(week)
-	binary.BigEndian.PutUint16(buf[1:], uint16(year))
+	binary.LittleEndian.PutUint16(buf[1:], uint16(year))
 	buf[3] = memberCount
 	var body []byte = buf[:nextByte]
 
@@ -254,6 +257,7 @@ func WeekGet(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// TODO: on frontend, maybe collect requests to update, delay (forgot what it's called) updates, and only execute the latest change
 func WeekSet(w http.ResponseWriter, r *http.Request) {
 
 	var ctx context.Context = r.Context()
@@ -291,40 +295,38 @@ func WeekSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var availability [7]uint32
 	var buf [28]byte
 	var n int
 	n, err = r.Body.Read(buf[:]) // TODO: change to readfull..?
-	if err != nil || n != 4*7 {
+	if (err != io.EOF && err != nil) || n != 4*7 {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
-	for i := range 7 * 4 {
-		availability[i] = binary.BigEndian.Uint32(buf[i:])
-	}
-
-	log.Println(availability)
-
 	var query string = `
 		UPDATE availability 
 		SET 
-			day0 = ? 
-			day1 = ?
-			day2 = ? 
-			day3 = ?
-			day4 = ? 
-			day5 = ?
+			day0 = ?,
+			day1 = ?,
+			day2 = ?,
+			day3 = ?,
+			day4 = ?,
+			day5 = ?,
 			day6 = ? 
-		WHERE 
-			band_id = ?
-			member_id = ? 
-			week = ? 
-			year = ? 
+		WHERE band_id = ?
+		AND member_id = ? 
+		AND week = ? 
+		AND year = ? 
 	`
 
 	_, err = utils.Db.ExecContext(ctx, query,
-		availability,
+		binary.LittleEndian.Uint32(buf[0*4:]),
+		binary.LittleEndian.Uint32(buf[1*4:]),
+		binary.LittleEndian.Uint32(buf[2*4:]),
+		binary.LittleEndian.Uint32(buf[3*4:]),
+		binary.LittleEndian.Uint32(buf[4*4:]),
+		binary.LittleEndian.Uint32(buf[5*4:]),
+		binary.LittleEndian.Uint32(buf[6*4:]),
 		bandId,
 		memberId,
 		week,
