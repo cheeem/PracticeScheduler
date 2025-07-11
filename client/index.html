@@ -8,22 +8,83 @@
     </head>
     <body>
         <div id="app">
+            <div id="confirmation">
+                <div class="container">
+                    <div>
+                        <p class="prompt-introduction"> Are you sure you want to </p>
+                        <p class="prompt-question"> leave Boxcutter Facelift? </p>
+                    </div>
+                    <div class="buttons">
+                        <button>Confirm</button>
+                        <button>Cancel</button>
+                    </div>
+                </div>
+            </div>
+            <header>
+                <div class="buttons">
+                    <button class="logout-member">Log Out</button>
+                </div>
+                <div class="header-inputs">
+                    <div class="input-container set">
+                        <label for="member-name-set">Username</label>
+                        <input id="member-name-set" type="text" />
+                        <p class="error"></p>
+                    </div>
+                    <div class="input-container set">
+                        <label for="band-name-set">Band Name</label>
+                        <input id="band-name-set" type="text" />
+                        <p class="error"></p>
+                    </div>
+                </div>
+            </header>
             <main>
-                <section id="grid">
-                    <ul class="labels"></ul>
-                    <div class="content">
-                        <ul class="body"></ul>
+                <!-- <section></section> -->
+                <section id="grid-page">
+                    <div id="grid">
+                        <div class="content">
+                            <ul class="labels">
+                                <li>8:00am</li>
+                                <li>9:00am</li>
+                                <li>10:00am</li>
+                                <li>11:00am</li>
+                                <li>12:00pm</li>
+                                <li>1:00pm</li>
+                                <li>2:00pm</li>
+                                <li>3:00pm</li>
+                                <li>4:00pm</li>
+                                <li>5:00pm</li>
+                                <li>6:00pm</li>
+                                <li>7:00pm</li>
+                                <li>8:00pm</li>
+                                <li>9:00pm</li>
+                                <li>10:00pm</li>
+                                <li>11:00pm</li>
+                                <li>12:00am</li>
+                            </ul>
+                            <ul class="body"></ul>
+                        </div>
                         <div class="legend">
-                            <div>
+                            <!-- <div class="instructions">
                                 <p>Hold left click and drag to select multiple cells</p>
                                 <p>Right click, drag, and right click again to select multiple cells</p>
-                            </div>
+                            </div> -->
                             <ul></ul>
+                            <div class="controls">
+                                <div class="buttons">
+                                    <button class="member-band-leave">Leave Band</button>
+                                    <button class="band-member-remove">Add New Member</button>
+                                </div>
+                                <div class="input-container add">
+                                    <label for="band-member-add">New Member Username</label>
+                                    <input id="band-member-add" type="text" />
+                                    <p class="error"></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </section>
-                <section id="lists">
-                    <ul></ul>
+                    <div id="lists">
+                        <ul></ul>
+                    </div>
                 </section>
             </main>
         </div>

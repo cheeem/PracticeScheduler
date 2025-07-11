@@ -99,6 +99,7 @@ func WeekNew(ctx context.Context, bandId int, week int, year int) (byte, error) 
 // format:
 //
 //	byte week
+//	byte month
 //	int16 year
 //	byte memberCount
 //	[7]byte weekdays
@@ -135,6 +136,7 @@ func WeekGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	year, week := dt.ISOWeek()
+	month := byte(dt.Month())
 
 	var query string = `
 		SELECT 
@@ -161,17 +163,15 @@ func WeekGet(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	var buf []byte = make([]byte, 256) // add checks to see if nextByte exceeds 256 and resize??
-	var nextByte int = 4
+	var nextByte int = 5
 
 	for range 7 {
-		dt = dt.AddDate(0, 0, 1)
 		buf[nextByte] = byte(dt.Day())
+		dt = dt.AddDate(0, 0, 1)
 		nextByte++
 	}
 
-	nextByte++ // increment to align to 4 bytes
-
-	var memberCount byte
+	var memberCount byte = 0
 	var day0 uint32
 	var day1 uint32
 	var day2 uint32
@@ -240,8 +240,15 @@ func WeekGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	buf[0] = byte(week)
-	binary.LittleEndian.PutUint16(buf[1:], uint16(year))
-	buf[3] = memberCount
+	// three options
+	// 1. just include "monday"'s month here, and increment on the frontend if the month isn't increasing
+	// 2. just include "monday"'s month here, and encode in the month byte the index of the next month (0 if no change)
+	//		so like 3 bits for the position, 4 bits for the month number
+	// 3. add the month for each day in the array with the weekday numbers
+	//		so byte[] -> {byte, byte}[]
+	buf[1] = month
+	binary.LittleEndian.PutUint16(buf[2:], uint16(year))
+	buf[4] = memberCount
 	var body []byte = buf[:nextByte]
 
 	w.WriteHeader(http.StatusOK)

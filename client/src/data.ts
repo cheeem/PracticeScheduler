@@ -7,7 +7,7 @@ export const dayCount: number = 7;
 
 export const weekDayNames: string[] = [
     "Monday",
-    "Tuesday",
+    "Tueday",
     "Wednesday",
     "Thursday",
     "Friday",
@@ -15,20 +15,38 @@ export const weekDayNames: string[] = [
     "Sunday",
 ];
 
+export const monthAbbreviatedNames: string[] = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+];
+
 //
 const bandId: number = 1;
-const memberId: number = 2;
+const bandName: string = "boxcutter facelift";
+const memberId: number = 4;
+const memberName: string = "chuck";
 //
 
 const bandAvailabilityWeeks: Uint32Array[] = [];
 const weekDayNumberWeeks: Uint8Array[] = [];
 const weekYearWeeks: number[] = []; // flattened
 
-let bandAvailabilityWeekIndex: number = 0;
+let weekIndex: number = 0;
 let week: number;
 let year: number;
 
-export let memberCount: number = 0;
+export let month: number;
+export let memberCount: number;
 export let bandAvailability: Uint32Array;
 export let weekDayNumbers: Uint8Array;
 export let member: number;
@@ -47,31 +65,41 @@ export const bandMemberColors: string[] = [];
 // ];
 
 export function weekNext() {
-    bandAvailabilityWeekIndex++;
+    weekIndex++;
 
-    if(bandAvailabilityWeekIndex === bandAvailabilityWeeks.length) {
-        weekGet(bandAvailabilityWeekIndex).then(gridRender)
+    const button: HTMLButtonElement = document.querySelector<HTMLButtonElement>(".week-button.previous")!
+    button.style.opacity = "1";
+    button.style.cursor = "pointer";
+
+    if(weekIndex === bandAvailabilityWeeks.length) {
+        weekGet(weekIndex).then(gridRender)
         return;
     }
 
-    bandAvailability = bandAvailabilityWeeks[bandAvailabilityWeekIndex];
-    weekDayNumbers = weekDayNumberWeeks[bandAvailabilityWeekIndex];
-    week = weekYearWeeks[bandAvailabilityWeekIndex];
-    year = weekYearWeeks[bandAvailabilityWeekIndex+1];
+    bandAvailability = bandAvailabilityWeeks[weekIndex];
+    weekDayNumbers = weekDayNumberWeeks[weekIndex];
+    week = weekYearWeeks[weekIndex];
+    year = weekYearWeeks[weekIndex+1];
     gridRender();
 }
 
 export function weekPrevious() {
-    if(bandAvailabilityWeekIndex === 0) {
+    if(weekIndex === 0) {
         return;
     }
 
-    bandAvailabilityWeekIndex--;
+    weekIndex--;
 
-    bandAvailability = bandAvailabilityWeeks[bandAvailabilityWeekIndex];
-    weekDayNumbers = weekDayNumberWeeks[bandAvailabilityWeekIndex];
-    week = weekYearWeeks[bandAvailabilityWeekIndex];
-    year = weekYearWeeks[bandAvailabilityWeekIndex+1];
+    if(weekIndex === 0) {
+        const button: HTMLButtonElement = document.querySelector<HTMLButtonElement>(".week-button.previous")!
+        button.style.opacity = "0.3";
+        button.style.cursor = "not-allowed";
+    }
+
+    bandAvailability = bandAvailabilityWeeks[weekIndex];
+    weekDayNumbers = weekDayNumberWeeks[weekIndex];
+    week = weekYearWeeks[weekIndex];
+    year = weekYearWeeks[weekIndex+1];
     gridRender();
 }
 
@@ -113,6 +141,11 @@ function bandMemberRead(buf: ArrayBuffer) {
     bandMemberNames.length = memberCount;
 }
 
+export function bandMemberRemove(memberId: number, legendKey: HTMLLIElement) {
+    // TODO:
+    console.log("remove member with id:" + memberId)
+}
+
 export async function weekGet(offset: number) {
     return fetch(`http://localhost:8080/week/get/${bandId}/${offset}`)
         .then((res: Response) => res
@@ -123,17 +156,18 @@ export async function weekGet(offset: number) {
 function weekRead(buf: ArrayBuffer) {
     const view: DataView = new DataView(buf);
     week = view.getUint8(0);
-    year = view.getInt16(1, true);
-    memberCount = view.getUint8(3);
+    month = view.getUint8(1);
+    year = view.getInt16(2, true);
+    memberCount = view.getUint8(4);
     // GenerateBandColors();
 
-    weekDayNumbers = new Uint8Array(buf, 4, 7);
+    weekDayNumbers = new Uint8Array(buf, 5, 7);
     bandAvailability = new Uint32Array(buf, 12);
 
-    weekYearWeeks[bandAvailabilityWeekIndex * 2] = week;
-    weekYearWeeks[bandAvailabilityWeekIndex * 2 + 1] = year;
-    weekDayNumberWeeks[bandAvailabilityWeekIndex] = weekDayNumbers
-    bandAvailabilityWeeks[bandAvailabilityWeekIndex] = bandAvailability
+    weekYearWeeks[weekIndex * 2] = week;
+    weekYearWeeks[weekIndex * 2 + 1] = year;
+    weekDayNumberWeeks[weekIndex] = weekDayNumbers
+    bandAvailabilityWeeks[weekIndex] = bandAvailability
 }
 
 export async function weekSet() {

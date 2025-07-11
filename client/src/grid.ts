@@ -7,10 +7,12 @@ import {
     bandAvailability, 
     bandMemberColors, 
     bandMemberNames, 
+    bandMemberIds,
+    member,
     weekNext, 
     weekPrevious, 
     weekSet,
-    member,
+    bandMemberRemove,
 } from "./data.ts";
 import listsRender from "./lists.ts";
 
@@ -38,13 +40,13 @@ export default function gridInitialize() {
     weekDayNumberElements = new Array(dayCount);
 
     const grid: HTMLUListElement = document.querySelector("#grid .body")!;
-    const labels: HTMLUListElement = document.querySelector("#grid .labels")!;
+    // const labels: HTMLUListElement = document.querySelector("#grid .labels")!;
 
     document.addEventListener("mouseup", documentMouseUp);
     grid.ondragstart = () => false;
 
-    let hour: number = 8;
-    let am: boolean = true;
+    //let hour: number = 8;
+    //let am: boolean = true;
 
     weekInitialize(grid);
 
@@ -52,17 +54,17 @@ export default function gridInitialize() {
 
         const odd = timeIncrement & 1;
 
-        if(!odd) {
-            const label: HTMLLIElement = document.createElement("li");
-            label.textContent = `${hour}:00${am ? "am" : "pm"}`;
-            labels.appendChild(label);
+        // if(!odd) {
+        //     const label: HTMLLIElement = document.createElement("li");
+        //     label.textContent = `${hour}:00${am ? "am" : "pm"}`;
+        //     labels.appendChild(label);
 
-            hour = (hour % 12) + 1;
+        //     hour = (hour % 12) + 1;
 
-            if(hour === 12) {
-                am = !am;
-            }
-        }
+        //     if(hour === 12) {
+        //         am = !am;
+        //     }
+        // }
 
         for(let day = 0; day < dayCount; day++) {
 
@@ -92,9 +94,9 @@ export default function gridInitialize() {
         }
     }
 
-    const label: HTMLLIElement = document.createElement("li");
-    label.textContent = `${hour}:00${am ? "am" : "pm"}`;
-    labels.appendChild(label);
+    // const label: HTMLLIElement = document.createElement("li");
+    // label.textContent = `${hour}:00${am ? "am" : "pm"}`;
+    // labels.appendChild(label);
 
     legendInitialize();
 
@@ -232,6 +234,8 @@ function weekInitialize(grid: HTMLUListElement) {
     const weekPreviousButton = document.createElement("button");
     weekPreviousButton.className = "week-button previous";
     weekPreviousButton.textContent = "<";
+    weekPreviousButton.style.opacity = "0.3";
+    weekPreviousButton.style.cursor = "not-allowed";
     weekPreviousButton.addEventListener("click", weekPrevious)
     firstWeekDay.appendChild(weekPreviousButton);
 
@@ -272,10 +276,6 @@ function weekDayInitialize(grid: HTMLUListElement, day: number): HTMLLIElement {
 function legendInitialize() {
 
     const legend: HTMLUListElement = document.querySelector("#grid .legend ul")!;
-    
-    //
-    // const legendKeyTexts: HTMLParagraphElement[] = [];
-    //
 
     for(let m = 0; m < bandMemberNames.length; m++) {
 
@@ -286,18 +286,7 @@ function legendInitialize() {
         legendKeyColor.style.backgroundColor = bandMemberColors[m];
         legendKeyText.textContent = bandMemberNames[m];
 
-        if(member === m) {
-            legendKeyText.style.textDecoration = "underline";
-        }
-        //
-        // legendKeyTexts.push(legendKeyText)
-        // legendKey.addEventListener("click", () => {
-        //     legendKeyTexts.forEach(e => e.style.textDecoration = "none");
-        //     legendKeyText.style.textDecoration = "underline";
-        //     member = m;
-        //     gridRender();
-        // });
-        //
+        legendKey.addEventListener("click", bandMemberRemove.bind(null, bandMemberIds[m], legendKey))
 
         legendKey.appendChild(legendKeyColor);
         legendKey.appendChild(legendKeyText);
